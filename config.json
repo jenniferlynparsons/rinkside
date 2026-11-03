@@ -36,7 +36,7 @@
       "league": "IIHF",
       "color": "#2B4C9B",
       "source": "iihf",
-      "source_label": "IIHF",
+      "source_label": "Wikipedia (IIHF Worlds)",
       "iihf": {
         "code": "USA",
         "roster_slug": "united_states"
@@ -49,7 +49,7 @@
       "league": "IIHF",
       "color": "#D52B1E",
       "source": "iihf",
-      "source_label": "IIHF",
+      "source_label": "Wikipedia (IIHF Worlds)",
       "iihf": {
         "code": "CAN",
         "roster_slug": "canada"
@@ -61,9 +61,12 @@
     "client_code": "pwhl"
   },
   "iihf": {
+    "source": "wikipedia",
     "path": "2026/ww",
     "name": "2026 IIHF Women's World Championship",
+    "wikipedia_title": "2026 IIHF Women's World Championship",
     "short": "Worlds",
+    "local_timezone": "Europe/Copenhagen",
     "watch": [
       {
         "name": "NHL Network",

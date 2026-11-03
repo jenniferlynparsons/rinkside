@@ -14,7 +14,7 @@ says when its data was last updated.
 GitHub Action wakes every 30 min
   └─ fetch/plan.py: anything worth fetching?  ── no ──▶ stop (no site contacted)
         │ yes
-        └─ fetch/fetch.py ──reads──▶ College Hockey News · PWHL (HockeyTech) · IIHF.com
+        └─ fetch/fetch.py ──reads──▶ College Hockey News · PWHL (HockeyTech) · Wikipedia API
               └─ writes data/*.json ─▶ published with index.html / app.js to GitHub Pages
 ```
 
@@ -25,7 +25,7 @@ Most wake-ups end without contacting anyone. A team's source is read only:
 - **Once a day**, the first wake-up after 6 a.m. Eastern: schedule changes, TV
   listings, rosters, standings, stats. (IIHF: daily while a tournament is
   within two weeks, weekly otherwise.)
-- **About an hour before a PWHL or IIHF game**, for the lineups.
+- **About an hour before a PWHL game**, for the lineups.
 - **After a game should be over** (2½ hours after puck drop), and hourly after
   that until the final score is posted, giving up after 12 hours.
 - **When you push a change or press Run workflow** on the Actions tab.
@@ -44,7 +44,13 @@ spread across the day; on a quiet day, about fifteen.
 |---|---|---|
 | Princeton | collegehockeynews.com | Schedule, results, TV, ECAC standings, roster, stats, box-score lineups |
 | Sirens | thepwhl.com's stats feed (HockeyTech) | Schedule, scores, broadcasters, conference standings, roster, stats, game lineups |
-| USA, Canada | iihf.com | Tournament schedule, scores, lineups (by line), roster, tournament stats |
+| USA, Canada | Wikipedia's open API (the tournament article and its rosters article) | Schedule, scores, goal scorers, group standings, bracket, rosters with numbers, tournament points |
+
+iihf.com blocks requests from cloud servers like GitHub's, so the IIHF teams
+read Wikipedia instead, which editors keep current during tournaments. It
+has no game-day lineups, so each game shows both teams' tournament rosters.
+(`fetch/iihf.py` still holds a parser for iihf.com, used if you set
+`iihf.source` to `"iihf"` in `config.json`.)
 
 ## Set it up (one time, about 10 minutes)
 
@@ -83,9 +89,10 @@ cp -r fetch/tests/sample-data data   # sample data (made-up stats) for previewin
 
 ## Changing what it follows — `config.json`
 
-- **Next IIHF tournament:** change `iihf.path` (for example `2027/ww` for the
-  2027 Worlds in Quebec City) and `iihf.name`. The roster and lineup pages are
-  found automatically.
+- **Next IIHF tournament:** change `iihf.name` / `iihf.wikipedia_title` to the
+  Wikipedia article's exact title (for example `2027 IIHF Women's World
+  Championship`), `iihf.local_timezone` to the host city's zone
+  (`America/Toronto` for Quebec City), and `iihf.path` (`2027/ww`).
 - **IIHF broadcasters:** the `iihf.watch` list. An entry with a `note` shows
   with a dashed outline and a `?` so you know it isn't confirmed. Delete the
   `note` once you've confirmed it.
@@ -107,9 +114,11 @@ cp -r fetch/tests/sample-data data   # sample data (made-up stats) for previewin
 - **No live scores, on purpose.** While a game is on, the page says it has
   started and the score appears after the final horn. Watch the broadcast
   for the live action.
-- **Lineups timing.** PWHL and IIHF lineups appear about an hour before puck
-  drop. College lineups come from the box score, so they appear after the
-  game.
+- **Lineups timing.** PWHL lineups appear about an hour before puck drop.
+  College lineups come from the box score, so they appear after the game.
+  IIHF games show the tournament rosters.
+- **IIHF scores come from Wikipedia editors,** usually within minutes of the
+  final horn. Tournament points are counted from their goal summaries.
 - **Time zone and broadcasters** are set for a US viewer in New Jersey:
   `display_timezone` in `config.json`, and Canadian channels are left out.
 - **College opponents' jersey numbers** come from each opponent's roster page.

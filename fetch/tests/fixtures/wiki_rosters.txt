@@ -1,0 +1,32 @@
+==Group A==
+===United States===
+The roster was announced on 20 October 2026.
+
+{| class="wikitable sortable" width="80%"
+!No.
+!Pos.
+!Name
+!Height
+!Weight
+!Birthdate
+!Team
+|-
+| 5 || D || align=left|{{sortname|Megan|Keller}} || {{convert|1.80|m|ftin|abbr=on}} || {{convert|80|kg|lb|abbr=on}} || {{birth date and age2|2026|11|6|1996|5|1|df=y}} || align=left|{{flagicon|USA}} [[Boston Fleet]]
+|-
+| 21 || F || align=left|{{sortname|Hilary|Knight}} – [[Captain (ice hockey)|'''C''']]|| {{convert|1.80|m|ftin|abbr=on}} || {{convert|78|kg|lb|abbr=on}} || {{birth date and age2|2026|11|6|1989|7|12|df=y}} || align=left|{{flagicon|USA}} [[Seattle Torrent]]
+|-
+| 26 || F || align="left"|{{sortname|Kendall|Coyne Schofield}} – [[Captain (ice hockey)|'''A''']]|| {{convert|1.57|m|ftin|abbr=on}} || {{convert|60|kg|lb|abbr=on}} || {{birth date and age2|2026|11|6|1992|5|25|df=y}} || align=left|{{flagicon|USA}} [[Minnesota Frost]]
+|-
+| 31 || G || align=left|{{sortname|Aerin|Frankel}} || {{convert|1.68|m|ftin|abbr=on}} || {{convert|65|kg|lb|abbr=on}} || {{birth date and age2|2026|11|6|1999|5|24|df=y}} || align=left|{{flagicon|USA}} [[Boston Fleet]]
+|}
+
+==Group B==
+===Canada===
+{| class="wikitable sortable"
+|-
+| 7 || F || align="left"|{{sortname|Laura|Stacey}} – [[Captain (ice hockey)|'''C''']]|| x || y || z || align="left"|{{flagicon|CAN}} [[Montreal Victoire]]
+|-
+| 10 || F || align=left|{{sortname|Sarah|Fillier}} || x || y || z || align=left|{{flagicon|CAN}} [[New York Sirens]]
+|-
+| 29 || G || align=left|{{sortname|Ann-Renée|Desbiens}} || x || y || z || align=left|{{flagicon|CAN}} [[Montreal Victoire]]
+|}

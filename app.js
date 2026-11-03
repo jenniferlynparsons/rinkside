@@ -323,6 +323,7 @@
   function lineupEmpty(g) {
     if (g.status === "final") return "No lineup was published for this game.";
     if (g.team === "princeton") return "College lineups appear here after the final horn, from the box score.";
+    if (g.team === "usa" || g.team === "can") return "The tournament roster appears here once it's announced.";
     return "Lineups appear here about an hour before puck drop.";
   }
 
@@ -357,7 +358,7 @@
     const bad = src.filter(([, v]) => !v.ok);
     $foot.innerHTML = `<p>All times Eastern. Scores and lineups update after each game; schedules, rosters and standings once a day.</p>
       ${bad.map(([k, v]) => `<p class="bad">${esc(teamOf(k).short)}: couldn't reach ${esc(v.label)} on the last try. Showing what we had as of ${esc(stamp(v.updated))}.</p>`).join("")}
-      <p>Sources: College Hockey News, the PWHL (HockeyTech), and IIHF.com. Always check the broadcaster before settling in.</p>`;
+      <p>Sources: College Hockey News, the PWHL (HockeyTech), and Wikipedia for IIHF tournaments. Always check the broadcaster before settling in.</p>`;
   }
 
   function route() {

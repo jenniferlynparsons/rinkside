@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import iso_utc, now_utc, parse_iso  # noqa: E402
 import college  # noqa: E402
 import iihf  # noqa: E402
+import wiki  # noqa: E402
 from pwhl import PWHL  # noqa: E402
 from plan import plan  # noqa: E402
 
@@ -186,7 +187,9 @@ def main():
     iihf_teams = [t for t in teams if t["source"] == "iihf"]
     if iihf_teams:
         try:
-            res = iihf.build_event(cfg["iihf"], iihf_teams, cache, cfg["iihf"].get("watch", []))
+            # iihf.com blocks cloud servers, so Wikipedia is the default source.
+            mod = iihf if cfg["iihf"].get("source") == "iihf" else wiki
+            res = mod.build_event(cfg["iihf"], iihf_teams, cache, cfg["iihf"].get("watch", []))
             for t in iihf_teams:
                 payload = res[t["key"]]
                 payload["games"] += extra_games(cfg, t["key"])

@@ -6,8 +6,8 @@ without contacting any source. A team is fetched only when:
   * it has never been fetched, or
   * it hasn't been refreshed yet today (after 6 a.m. Eastern) — this picks up
     schedule changes, TV listings, rosters and standings, or
-  * a PWHL or IIHF game starts within the next 75 minutes (lineups are
-    posted about an hour before puck drop), or
+  * a PWHL game starts within the next 75 minutes (lineups are posted about
+    an hour before puck drop; the IIHF source has no game-day lineups), or
   * one of its games should be over by now and we don't have the final yet.
 
 IIHF teams are only refreshed daily while a tournament is near; otherwise
@@ -70,7 +70,7 @@ def plan(teams, out_dir, meta, now):
             if g.get("status") == "final":
                 continue
             start = parse_iso(g["start"])
-            if t["source"] in ("pwhl", "iihf") and start - PREGAME <= now < start + timedelta(minutes=15) \
+            if t["source"] == "pwhl" and start - PREGAME <= now < start + timedelta(minutes=15) \
                     and updated < start - PREGAME:
                 reason = f"lineups before puck drop ({g['id']})"
             elif start + GAME_LENGTH <= now <= start + GIVE_UP_AFTER:

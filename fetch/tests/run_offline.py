@@ -18,6 +18,7 @@ import college  # noqa: E402
 import common  # noqa: E402
 import iihf  # noqa: E402
 import pwhl  # noqa: E402
+import wiki  # noqa: E402
 import fetch  # noqa: E402
 
 
@@ -135,6 +136,9 @@ def fake_get(url, *, params=None, as_json=False, **kw):
         if path.startswith("/box/"):
             raise RuntimeError("GET failed: (no fixture for this box score)")
         raise AssertionError(f"unexpected CHN call {path}")
+    if "wikipedia.org" in url:
+        page = p.get("page", "")
+        return {"parse": {"wikitext": fx("wiki_rosters.txt" if page.endswith("rosters") else "wiki_event.txt")}}
     if "iihf.com" in url:
         if url.endswith("/schedule"):
             return fx("iihf_schedule.html")
@@ -149,7 +153,7 @@ def fake_get(url, *, params=None, as_json=False, **kw):
 
 
 def main():
-    for mod in (college, iihf, pwhl, common):
+    for mod in (college, iihf, pwhl, wiki, common):
         mod.http_get = fake_get
     # Pretend "now" is the first weekend of Worlds so the lineup logic runs.
     out = os.path.join(HERE, "sample-data")
@@ -210,25 +214,37 @@ def main():
     assert lu["away"]["groups"][1]["players"][0]["name"] == "Sarah Fillier", lu["away"]
 
     us = load("teams", "usa.json")
-    assert [g["id"] for g in us["games"]] == ["iihf-13547", "iihf-13551", "iihf-13555", "iihf-13563"]
-    assert us["games"][0]["status"] == "final" and us["games"][0]["away"]["score"] == 6
-    assert us["games"][0]["start"] == "2026-11-06T18:00:00Z"
-    assert us["games"][0]["venue"] == "Hockey Arena Esbjerg"
-    assert us["games"][1]["status"] == "live" and us["games"][1]["lineup"]
+    ids = [g["id"] for g in us["games"]]
+    assert ids == ["iihf-20261106-sui-usa", "iihf-20261108-usa-ger"], ids
+    g0 = us["games"][0]
+    assert g0["start"] == "2026-11-06T18:00:00Z", g0["start"]          # 19:00 in Denmark = 1 pm ET
+    assert g0["status"] == "final" and g0["away"]["score"] == 6 and g0["side"] == "away"
+    assert g0["venue"] == "Granly Hockey Arena, Esbjerg" and g0["lineup"]
+    assert [w["name"] for w in g0["watch"]] == ["NHL Network"]
     grp = us["standings"][0]["rows"]
     assert grp[0]["code"] == "USA" and grp[0]["pts"] == 3, grp
     cze = next(r for r in grp if r["code"] == "CZE")
-    assert cze["pts"] == 2 and cze["otw"] == 1
-    assert len(us["bracket"]) == 2
-    assert us["roster"]["players"][0]["name"] == "Hilary Knight", us["roster"]["players"][:2]
-    assert any(p["name"] == "Ava McNaughton" for p in us["roster"]["players"])
-    assert all(p["pos"] != "" for p in us["roster"]["players"])
-    assert us["stats"]["skaters"]["rows"][0]["name"] == "Hilary Knight"
-    lu = load("lineups", "iihf-13547.json")
-    assert lu["away"]["groups"][1]["title"] == "Line 1"
-    assert lu["away"]["groups"][1]["players"][1]["flag"] == "C"
+    assert cze["pts"] == 2 and cze["otw"] == 1, cze
+    assert [b["phase"] for b in us["bracket"]] == ["Quarterfinal", "Gold medal game"]
+    names = {p["name"]: p for p in us["roster"]["players"]}
+    assert names["Hilary Knight"]["num"] == "21" and names["Hilary Knight"]["flag"] == "C", names
+    assert names["Kendall Coyne Schofield"]["flag"] == "A" and names["Aerin Frankel"]["pos"] == "G"
+    assert names["Megan Keller"]["detail"] == "Boston Fleet"
+    st = {r["name"]: r for r in us["stats"]["skaters"]["rows"]}
+    assert (st["Hilary Knight"]["g"], st["Hilary Knight"]["a"]) == (3, 1), st["Hilary Knight"]
+    assert (st["Kendall Coyne Schofield"]["g"], st["Kendall Coyne Schofield"]["a"]) == (2, 2), st
+    assert (st["Megan Keller"]["g"], st["Megan Keller"]["a"]) == (1, 2), st["Megan Keller"]
+    lu = load("lineups", "iihf-20261106-sui-usa.json")
+    assert lu["away"]["groups"][0]["title"] == "Goalies" and lu["away"]["groups"][0]["players"][0]["num"] == "31"
+    assert len(lu["scoring"]) == 6 and lu["scoring"][0]["text"].startswith("Hilary Knight — from Kendall Coyne Schofield")
+    assert "[PP1]" in lu["scoring"][1]["text"] and "[EN]" in lu["scoring"][-1]["text"]
     ca = load("teams", "can.json")
     assert ca["games"][0]["away"]["score"] == 4 and ca["standings"][0]["title"].endswith("Group B")
+    cst = {r["name"]: r for r in ca["stats"]["skaters"]["rows"]}
+    assert cst["Laura Stacey"]["g"] == 2 and cst["Laura Stacey"]["a"] == 1 and cst["Sarah Fillier"]["g"] == 2
+    lu = load("lineups", "iihf-20261106-swe-can.json")
+    assert [x["team"] for x in lu["scoring"]] == ["CAN", "SWE", "CAN", "CAN", "CAN"], lu["scoring"]
+    assert lu["scoring"][3]["text"] == "Sarah Fillier" and lu["scoring"][2]["text"] == "Sarah Fillier — from Laura Stacey"
     print("\nAll offline checks passed. Sample data in", out)
 
 

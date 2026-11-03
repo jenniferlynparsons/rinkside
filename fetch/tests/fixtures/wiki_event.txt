@@ -1,0 +1,84 @@
+==Rosters==
+{{main|2026 IIHF Women's World Championship rosters}}
+
+==Preliminary round==
+''All times are local ([[Central European Time|UTC+1]]).''
+
+===Group A===
+{{Ice hockey box
+| bg          = 
+| date        = 6 November 2026
+| time        = 19:00
+| team1       = {{ihw-rt|SUI}}
+| team2       = '''{{ihw|USA}}'''
+| score       = 0–6
+| periods     = (0–2, 0–3, 0–1)
+| goalie1     = [[Andrea Brändli|Brändli]]
+| goalie2     = [[Aerin Frankel|Frankel]]
+| goals1      = 
+| goals2      = 02:44 – [[Hilary Knight|Knight]] ([[Kendall Coyne Schofield|Coyne Schofield]], [[Megan Keller|Keller]]) / 15:10 – [[Kendall Coyne Schofield|Coyne Schofield]] (Knight) (PP1) / 31:05 – Knight / 40:02 – [[Megan Keller|Keller]] ([[Kendall Coyne Schofield|Coyne Schofield]]) / 44:00 – Knight (Keller) / 59:01 – Coyne Schofield (EN)
+| stadium     = [[Granly Hockey Arena]], [[Esbjerg]]
+}}
+----
+{{Ice hockey box
+| date        = 6 November 2026
+| time        = 19:00
+| team1       = '''{{ihw-rt|CZE}}'''
+| team2       = {{ihw|GER}}
+| score       = 3–2 {{small|[[Overtime (ice hockey)|OT]]}}
+| periods     = (1–1, 1–0, 0–1)<br>(OT: 1–0)
+| goals1      = 
+| goals2      = 
+| stadium     = [[KVIK Hockey Arena]], [[Herning]]
+}}
+----
+{{Ice hockey box
+| date        = 8 November 2026
+| time        = 15:00
+| team1       = {{ihw-rt|USA}}
+| team2       = {{ihw|GER}}
+| score       = 
+| stadium     = [[Granly Hockey Arena]], [[Esbjerg]]
+}}
+
+===Group B===
+{{Ice hockey box
+| date        = 6 November 2026
+| time        = 15:00
+| team1       = {{ihw-rt|SWE}}
+| team2       = '''{{ihw|CAN}}'''
+| score       = 1–4
+| goals1      = [[Hanna Olsson|Olsson]] – 12:30
+| goals2      = 05:01 – [[Laura Stacey|Stacey]] / 22:10 – [[Sarah Fillier|Fillier]] (Stacey) / 33:33 – Fillier / 58:00 – Stacey (EN)
+| stadium     = [[KVIK Hockey Arena]], [[Herning]]
+}}
+----
+{{Ice hockey box
+| date        = 8 November 2026
+| time        = 19:00
+| team1       = {{ihw-rt|CAN}}
+| team2       = {{ihw|JPN}}
+| score       = 
+| stadium     = [[KVIK Hockey Arena]], [[Herning]]
+}}
+
+==Knockout stage==
+===Quarterfinals===
+{{Ice hockey box
+| date        = 13 November 2026
+| time        = 15:00
+| team1       = TBD
+| team2       = TBD
+| score       = 
+| stadium     = [[KVIK Hockey Arena]], [[Herning]]
+}}
+
+===Final===
+{{Ice hockey box
+| date        = 16 November 2026
+| time        = 19:00
+| team1       = TBD
+| team2       = TBD
+| score       = 
+| stadium     = [[KVIK Hockey Arena]], [[Herning]]
+}}
