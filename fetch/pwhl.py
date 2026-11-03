@@ -104,7 +104,27 @@ class PWHL:
             if stats:
                 stats["title"] += " (last season — new stats start with the first regular-season game)"
 
+        # League position: points per game, then points (only once games are played).
+        rows = [r for t in standings for r in t["rows"] if r["gp"] > 0]
+        rows.sort(key=lambda r: (-r["pts"] / r["gp"], -r["pts"], -r["w"]))
+        ranks = {r["team"]: i for i, r in enumerate(rows, 1)}
+        us_rank = next((ranks[r["team"]] for r in rows if r["us"]), None)
+
+        # Captains: the C/A marks on our side of the most recent lineup.
+        captains = {}
+        for g in reversed(games):
+            lu = g.get("_lineup")
+            if lu:
+                for grp in lu[g["side"]]["groups"]:
+                    for p in grp["players"]:
+                        if p.get("flag") in ("C", "A"):
+                            captains[p["name"]] = p["flag"]
+                if captains:
+                    break
+
         return {
+            "ranking": {"scope": "PWHL", "describe": "PWHL league table (points per game)", "ranks": ranks, "us": us_rank},
+            "_captains": captains,
             "games": games,
             "standings": standings,
             "roster": {"title": roster_title + " roster", "players": roster},

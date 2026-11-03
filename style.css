@@ -217,3 +217,17 @@ table.grid td.n { font: 800 20px/1 var(--display); color: var(--c, var(--boards)
 .foot p { margin: 4px 0; }
 .foot .bad { color: var(--redline); }
 .foot button { font: inherit; color: var(--blueline); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+
+/* home games: a board-colored rail in the gutter and a small label */
+.game.home { border-left: 4px solid var(--c, var(--boards)); padding-left: 10px; margin-left: -14px; }
+.homebadge { flex: none; font: 700 12.5px/1 var(--body); color: var(--ice); background: var(--boards);
+  border-radius: 4px; padding: 3px 6px; }
+.hero .homebadge { font-size: 13px; }
+
+/* opponent ranking relative to ours */
+.rk { flex: none; font-size: 13.5px; font-weight: 700; white-space: nowrap; color: var(--boards-soft); }
+.rk.up { color: var(--redline); }
+.rk.level { color: var(--boards-soft); }
+.legend .rk { font-size: inherit; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.game .who { flex-wrap: wrap; }

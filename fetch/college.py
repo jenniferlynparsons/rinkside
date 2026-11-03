@@ -218,6 +218,18 @@ def parse_standings(html, conference, team_name):
     }]
 
 
+def parse_npi(html):
+    """{team name: national rank} from CHN's NPI ratings page."""
+    root = dom.parse(html)
+    table = max(root.find_all("table"), key=lambda t: len(dom.rows(t)), default=None)
+    ranks = {}
+    for r in dom.rows(table) if table is not None else []:
+        cs = dom.cells(r)
+        if len(cs) >= 2 and cs[0].text.isdigit() and cs[1].links():
+            ranks[cs[1].text] = int(cs[0].text)
+    return ranks
+
+
 # ---------------------------------------------------------------- box score
 def parse_box(html, game, numbers_by_team):
     """numbers_by_team: {normalized team name: {normalized player: jersey}}"""
@@ -306,6 +318,11 @@ def build(team_cfg, cache):
     stats = parse_stats(get(f"/women/stats/team/{slug}/{tid}"), roster)
     stats["title"] = f"{season[:4]}-{season[6:]} season"
     standings = parse_standings(get("/women/standings.php"), c.get("conference", "ECAC"), name)
+    try:
+        npi = parse_npi(get("/women/ratings.php"))
+    except Exception as e:
+        print(f"  npi: {e}")
+        npi = {}
     for g in games:
         if g["comp"] == "Conference":
             g["comp"] = c.get("conference", "Conference")
@@ -346,4 +363,6 @@ def build(team_cfg, cache):
         "standings": standings,
         "roster": {"title": f"{season[:4]}-{season[6:]} roster", "players": roster},
         "stats": stats,
+        "ranking": {"scope": "NPI", "describe": "national NPI ranking", "ranks": npi,
+                    "us": next((v for k, v in npi.items() if norm_name(k) == norm_name(name)), None)},
     }

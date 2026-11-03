@@ -64,6 +64,24 @@
     return { us, them, result, prefix };
   }
 
+  const isHome = (g) => g.side === "home" && !g.neutral;
+  const homeBadge = (g) => (isHome(g) ? `<span class="homebadge">Home</span>` : "");
+  const ordinal = (n) => n + (["th", "st", "nd", "rd"][(n % 100 > 10 && n % 100 < 14) ? 0 : n % 10] || "th");
+  const rankName = (n, scope) => (scope === "NPI" ? `No. ${n}` : `${ordinal(n)} in ${scope}`);
+
+  // Is the opponent ranked above or below us? (▲ above, ▼ below)
+  function rankTag(g) {
+    const r = g.rank;
+    if (!r) return "";
+    const them = perspective(g).them.name;
+    const us = teamOf(g.team).short;
+    const dir = r.them < r.us ? "up" : r.them > r.us ? "down" : "level";
+    const sym = { up: "▲", down: "▼", level: "=" }[dir];
+    const words = { up: "ranked above", down: "ranked below", level: "level with" }[dir];
+    const title = `${them} ${words} ${us}: ${rankName(r.them, r.scope)}, ${us} ${rankName(r.us, r.scope)}`;
+    return `<span class="rk ${dir}" title="${esc(title)}"><span aria-hidden="true">${sym}</span><span class="sr">${esc(words)} ${esc(us)},</span> ${esc(rankName(r.them, r.scope))}</span>`;
+  }
+
   function watchHtml(list) {
     list = (list || []).filter((w) => w.region !== "Canada");  // US viewer
     if (!list.length) return "";
@@ -95,10 +113,10 @@
     const p = perspective(g);
     const sub = [g.comp, g.venue].filter(Boolean).map(esc).join(" — ");
     const right = g.status === "scheduled" ? "" : scoreHtml(g);
-    return `<div class="game">
+    return `<div class="game${isHome(g) ? " home" : ""}" style="--c:${esc(teamOf(g.team).color)}">
       <div class="t">${g.status === "final" ? "Final" : g.status === "live" || started(g) ? "Started" : esc(timeLabel(g))}</div>
       <div>
-        <div class="who">${showTeam ? dot(g.team) : ""}<a class="opp" href="#/game/${encodeURIComponent(g.id)}">${showTeam ? esc(teamOf(g.team).short) + " " : ""}<span class="ha">${p.prefix}</span> ${esc(p.them.name)}</a></div>
+        <div class="who">${showTeam ? dot(g.team) : ""}${homeBadge(g)}<a class="opp" href="#/game/${encodeURIComponent(g.id)}">${showTeam ? esc(teamOf(g.team).short) + " " : ""}<span class="ha">${p.prefix}</span> ${esc(p.them.name)}</a></div>
         ${right ? `<div>${right}</div>` : ""}
         <div class="sub">${sub}</div>
         ${started(g) ? `<div class="sub">Score posts after the final horn.</div>` : ""}
@@ -159,7 +177,7 @@
       const live = next.status === "live";
       hero = `<section class="hero${live ? " live" : ""}" aria-label="Next game">
         <div class="when"><small>${live ? "Live now" : started(next) ? "Started at " + esc(fTime.format(d)) + ", score posts after the game" : esc(dayLabel(d) === fDay.format(d) ? fLong.format(d) : dayLabel(d))}</small>${live ? `${p.us.score ?? 0}–${p.them.score ?? 0}` : started(next) ? "Underway" : esc(timeLabel(next))}</div>
-        <div class="match">${dot(next.team)}<strong>${esc(teamOf(next.team).name)}</strong> <span>${p.prefix} ${esc(p.them.name)}</span></div>
+        <div class="match">${dot(next.team)}<strong>${esc(teamOf(next.team).name)}</strong> <span>${p.prefix} ${esc(p.them.name)}</span>${homeBadge(next)}</div>
         <div class="meta">${[next.comp, next.venue].filter(Boolean).map(esc).join(" — ")}</div>
         ${watchHtml(next.watch)}
         <a class="more" href="#/game/${encodeURIComponent(next.id)}">${live || next.lineup ? "Lineups and details" : "Game details"}</a>
@@ -235,7 +253,11 @@
       const games = t.games || [];
       const upcoming = games.filter((g) => g.status !== "final");
       const done = games.filter((g) => g.status === "final");
-      body = `<section class="block"><h2>Coming up</h2>${upcoming.length ? upcoming.map((g) => gameRowDated(g)).join("") : `<p class="empty">Nothing scheduled right now.</p>`}</section>
+      const rk = t.ranking;
+      const legend = rk && rk.us
+        ? `<p class="note legend"><span class="rk up">▲</span> ranked above ${esc(t.short)}, <span class="rk down">▼</span> below, by the ${esc(rk.describe)}, where ${esc(t.short)} ${rk.scope === "NPI" ? "is" : "are"} ${esc(rankName(rk.us, rk.scope))}.</p>`
+        : rk ? `<p class="note legend">Opponent rankings appear once games have been played.</p>` : "";
+      body = `${legend}<section class="block"><h2>Coming up</h2>${upcoming.length ? upcoming.map((g) => gameRowDated(g)).join("") : `<p class="empty">Nothing scheduled right now.</p>`}</section>
         <section class="block"><h2>Results</h2>${done.length ? [...done].reverse().map((g) => gameRowDated(g)).join("") : `<p class="empty">No results yet this season.</p>`}</section>`;
     } else if (tab === "standings") {
       body = (t.standings || []).map((s, i) => `<section class="block"><h2>${esc(s.title)}</h2>
@@ -276,10 +298,10 @@
     const d = new Date(g.start);
     const p = perspective(g);
     const sub = [g.comp, g.venue].filter(Boolean).map(esc).join(" — ");
-    return `<div class="game">
+    return `<div class="game${isHome(g) ? " home" : ""}" style="--c:${esc(teamOf(g.team).color)}">
       <div class="t">${esc(fDay.format(d).split(",")[1]?.trim() || fDay.format(d))}<small>${esc(fDay.format(d).split(",")[0])}${g.status === "final" ? "" : ", " + esc(timeLabel(g))}</small></div>
       <div>
-        <div class="who"><a class="opp" href="#/game/${encodeURIComponent(g.id)}"><span class="ha">${p.prefix}</span> ${esc(p.them.name)}</a></div>
+        <div class="who">${homeBadge(g)}<a class="opp" href="#/game/${encodeURIComponent(g.id)}"><span class="ha">${p.prefix}</span> ${esc(p.them.name)}</a>${g.status !== "final" ? rankTag(g) : ""}</div>
         ${g.status !== "scheduled" ? `<div>${scoreHtml(g)}</div>` : ""}
         <div class="sub">${sub}</div>
         ${g.status !== "final" ? watchHtml(g.watch) : ""}
@@ -303,6 +325,8 @@
           <div class="side away">${esc(g.home.name)}<small>${g.neutral ? "" : "Home"}</small></div>
         </div>
         <dl class="facts">
+          ${g.rank ? `<dt>Ranking</dt><dd>${rankTag(g)} <span class="note">vs ${esc(teamOf(g.team).short)} at ${esc(rankName(g.rank.us, g.rank.scope))}</span></dd>` : ""}
+          ${isHome(g) ? `<dt>Home</dt><dd>${esc(teamOf(g.team).short)} at home</dd>` : ""}
           <dt>When</dt><dd>${g.tbd ? esc(fLong.format(d)) + ", time to be announced" : esc(fFull.format(d))}</dd>
           ${g.venue ? `<dt>Where</dt><dd>${esc(g.venue)}</dd>` : ""}
           ${links ? `<dt>More</dt><dd>${links}</dd>` : ""}

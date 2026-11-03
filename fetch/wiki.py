@@ -253,8 +253,13 @@ def build_event(event_cfg, team_cfgs, cache, watch_cfg):
                    for g in sorted(games_all, key=lambda x: x["start"])
                    if g["phase"] not in ("PreliminaryRound", "RelegationRound", "")]
 
-        standings = []
+        standings, ranking = [], None
         if group:
+            table = group_table(games_all, group, names)
+            played = [r for r in table if r["gp"] > 0]
+            ranking = {"scope": f"Group {group}", "describe": f"{event_cfg['short']} Group {group} table",
+                       "ranks": {r["team"]: r["rank"] for r in played},
+                       "us": next((r["rank"] for r in played if r["code"] == code), None)}
             standings.append({
                 "title": f"{event_cfg['short']} · Group {group}",
                 "columns": [{"key": "gp", "label": "GP"}, {"key": "pts", "label": "PTS"}, {"key": "w", "label": "W"},
@@ -306,5 +311,6 @@ def build_event(event_cfg, team_cfgs, cache, watch_cfg):
                                            "detail": p["club"]} for p in roster],
                                          key=lambda p: (order.get(p["pos"], 3), to_int(p["num"], 99)))},
             "stats": stats,
+            "ranking": ranking,
         }
     return results

@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from common import iso_utc, now_utc, parse_iso  # noqa: E402
+from common import iso_utc, norm_name, now_utc, parse_iso  # noqa: E402
 import college  # noqa: E402
 import iihf  # noqa: E402
 import wiki  # noqa: E402
@@ -68,15 +68,56 @@ def write_json(path, obj):
     os.replace(tmp, path)
 
 
+def _match(name, table):
+    """Find a team or player in a {name: value} table despite small spelling differences."""
+    n = norm_name(name)
+    for k, v in table.items():
+        if norm_name(k) == n:
+            return v
+    for k, v in table.items():
+        kn = norm_name(k)
+        if kn and n and (kn in n or n in kn):
+            return v
+    return None
+
+
 def finish_team(key, team_cfg, payload, out):
-    """Split lineups into their own files and strip private fields."""
+    """Add captains and opponent rankings, split lineups into their own
+    files, and strip private fields."""
+    # Captains: what the source says, unless config.json names them.
+    flags = {p["name"]: p["flag"] for p in payload.get("roster", {}).get("players", []) if p.get("flag")}
+    flags.update(payload.pop("_captains", {}) or {})
+    override = team_cfg.get("captains")
+    if override:
+        flags = {n: "C" for n in override.get("C", [])}
+        flags.update({n: "A" for n in override.get("A", [])})
+
+    def flag_of(name):
+        return _match(name, flags) or "" if flags else ""
+    for p in payload.get("roster", {}).get("players", []):
+        p["flag"] = flag_of(p["name"])
+
+    # Opponent ranking relative to ours.
+    ranking = payload.pop("ranking", None) or {}
+    ranks, us_rank = ranking.get("ranks") or {}, ranking.get("us")
+    if ranking:
+        payload["ranking"] = {"scope": ranking["scope"], "describe": ranking["describe"], "us": us_rank}
+
     lineup_dir = os.path.join(out, "lineups")
     games = []
     for g in payload.get("games", []):
         lu = g.pop("_lineup", None)
         g["team"] = key
         g["lineup"] = False
+        them = g["away"] if g.get("side") == "home" else g["home"]
+        r = _match(them["name"], ranks) if ranks else None
+        if r and us_rank:
+            g["rank"] = {"them": r, "us": us_rank, "scope": ranking["scope"]}
         if lu and any(lu.get(s, {}).get("groups") for s in ("home", "away")):
+            for grp in lu.get(g.get("side"), {}).get("groups", []):
+                for p in grp["players"]:
+                    if flags:
+                        p["flag"] = flag_of(p["name"])
             write_json(os.path.join(lineup_dir, f"{g['id']}.json"), lu)
             g["lineup"] = True
         for k in [k for k in g if k.startswith("_")]:

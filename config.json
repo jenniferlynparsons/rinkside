@@ -15,6 +15,14 @@
         "id": 45,
         "season": "20262027",
         "conference": "ECAC"
+      },
+      "captains": {
+        "C": [
+          "Gabby Kim",
+          "Rosie Klein",
+          "Uma Corniea"
+        ],
+        "_note": "From goprincetontigers.com's roster (it marks captains, but blocks automated readers). Update each season."
       }
     },
     {
@@ -27,7 +35,8 @@
       "source_label": "PWHL (HockeyTech)",
       "pwhl": {
         "team_name": "New York Sirens"
-      }
+      },
+      "_captains_note": "Captains come from the source automatically. To set them by hand, add \"captains\": {\"C\": [\"Name\"], \"A\": [\"Name\", \"Name\"]}"
     },
     {
       "key": "usa",
@@ -40,7 +49,8 @@
       "iihf": {
         "code": "USA",
         "roster_slug": "united_states"
-      }
+      },
+      "_captains_note": "Captains come from the source automatically. To set them by hand, add \"captains\": {\"C\": [\"Name\"], \"A\": [\"Name\", \"Name\"]}"
     },
     {
       "key": "can",

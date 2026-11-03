@@ -129,6 +129,8 @@ def fake_get(url, *, params=None, as_json=False, **kw):
             return fx("chn_roster_yale.html")
         if path.startswith("/women/stats/team/Princeton"):
             return fx("chn_stats.html")
+        if path.startswith("/women/ratings.php"):
+            return fx("chn_npi.html")
         if path.startswith("/women/standings.php"):
             return fx("chn_standings.html")
         if path.startswith("/box/final/20261031"):
@@ -245,6 +247,23 @@ def main():
     lu = load("lineups", "iihf-20261106-swe-can.json")
     assert [x["team"] for x in lu["scoring"]] == ["CAN", "SWE", "CAN", "CAN", "CAN"], lu["scoring"]
     assert lu["scoring"][3]["text"] == "Sarah Fillier" and lu["scoring"][2]["text"] == "Sarah Fillier — from Laura Stacey"
+    # Captains, home games and opponent rankings
+    prn = {p["name"]: p for p in pr["roster"]["players"]}
+    assert prn["Uma Corniea"]["flag"] == "C" and prn["Riley Sorokan"]["flag"] == "", prn["Uma Corniea"]
+    lu = load("lineups", f"{yale['id']}.json")
+    assert lu["home"]["groups"][0]["players"][0]["flag"] == "C"           # Corniea in the box-score lineup
+    assert pr["ranking"] == {"scope": "NPI", "describe": "national NPI ranking", "us": 2}, pr["ranking"]
+    col = next(g for g in pr["games"] if g["away"]["name"] == "Colgate")
+    assert col["rank"] == {"them": 5, "us": 2, "scope": "NPI"}, col.get("rank")
+    minn = next(g for g in pr["games"] if g["away"]["name"] == "Minnesota")
+    assert minn["rank"]["them"] == 3 and minn["neutral"]
+    assert "rank" not in next(g for g in pr["games"] if g["away"]["name"] == "Cornell")   # not in the NPI table
+    assert {p["name"]: p["flag"] for p in sr["roster"]["players"]}["Micah Zandee-Hart"] == "C"   # from latest lineup
+    assert sr["ranking"]["us"] is None and "rank" not in sr["games"][1]                # no games played yet
+    assert us["ranking"]["us"] == 1 and us["games"][1]["rank"] == {"them": 3, "us": 1, "scope": "Group A"}, us["games"][1]
+    cap = {p["name"]: p["flag"] for p in us["roster"]["players"]}
+    assert cap["Hilary Knight"] == "C" and cap["Kendall Coyne Schofield"] == "A"
+
     print("\nAll offline checks passed. Sample data in", out)
 
 
