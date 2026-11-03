@@ -352,6 +352,7 @@
       else {
         const groups = {};
         for (const p of players) (groups[POS_GROUP(p.pos)] ||= []).push(p);
+        for (const k in groups) groups[k].sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
         body = `<section class="block"><h2>${esc(t.roster.title)}</h2>${["Forwards", "Defense", "Goalies", "Players"].filter((g) => groups[g])
           .map((g) => `<h3 class="posgroup">${g}</h3>${playerList(groups[g], key)}`).join("")}</section>`;
       }
@@ -387,7 +388,7 @@
           <div class="side away">${esc(g.home.name)}<small>${g.neutral ? "" : "Home"}</small></div>
         </div>
         <dl class="facts">
-          ${g.rank ? `<dt>Ranking</dt><dd>${rankTag(g)} <span class="note">vs ${esc(teamOf(g.team).short)} at ${esc(rankName(g.rank.us, g.rank.scope))}</span></dd>` : ""}
+          ${g.rank ? `<dt>Ranking</dt><dd>${rankTag(g)}; ${esc(teamOf(g.team).short)} is ${esc(rankName(g.rank.us, g.rank.scope))}</dd>` : ""}
           ${isHome(g) ? `<dt>Home</dt><dd>${esc(teamOf(g.team).short)} at home</dd>` : ""}
           <dt>When</dt><dd>${g.tbd ? esc(fLong.format(d)) + ", time to be announced" : esc(fFull.format(d))}</dd>
           ${g.venue ? `<dt>Where</dt><dd>${esc(g.venue)}</dd>` : ""}
