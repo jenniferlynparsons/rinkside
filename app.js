@@ -82,6 +82,28 @@
     return `<span class="rk ${dir}" title="${esc(title)}"><span aria-hidden="true">${sym}</span><span class="sr">${esc(words)} ${esc(us)},</span> ${esc(rankName(r.them, r.scope))}</span>`;
   }
 
+  // Calendar subscription links for calendar/<key>.ics (published next to the site).
+  function calendarBlock(key, label) {
+    const https = new URL(`calendar/${key}.ics`, location.href.split("#")[0]).href;
+    const webcal = https.replace(/^https?:/, "webcal:");
+    const google = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}`;
+    return `<section class="block cal"><h2>In your calendar</h2>
+      <p>Subscribe once and ${esc(label)} stay up to date: new games, time changes and final scores, with the channel in each event.</p>
+      <div class="calbtns">
+        <a class="calbtn" href="${esc(google)}" target="_blank" rel="noopener">Add to Google Calendar</a>
+        <a class="calbtn alt" href="${esc(webcal)}">Apple or Outlook</a>
+        <button type="button" class="calbtn alt" data-copy="${esc(https)}">Copy link</button>
+      </div>
+      <p class="note">Google checks subscribed calendars every few hours, so very late changes can take a while to show up.</p>
+    </section>`;
+  }
+  function wireCopy() {
+    $main.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "Link copied"; }
+      catch { window.prompt("Copy this calendar link:", b.dataset.copy); }
+    }));
+  }
+
   function watchHtml(list) {
     list = (list || []).filter((w) => w.region !== "Canada");  // US viewer
     if (!list.length) return "";
@@ -190,7 +212,9 @@
     $main.innerHTML = `${hero}
       <p class="updated">Last updated ${esc(stamp(latest))}</p>
       <div class="filters" role="group" aria-label="Show games for"><span class="lbl">Showing</span>${filters}</div>
-      ${agenda(games)}`;
+      ${agenda(games)}
+      ${calendarBlock("all", "games for all four teams")}`;
+    wireCopy();
     $main.querySelectorAll(".filters button").forEach((b) => b.addEventListener("click", () => {
       const k = b.dataset.team;
       let f = store.get("rinkside.filter", keys);
@@ -258,7 +282,8 @@
         ? `<p class="note legend"><span class="rk up">▲</span> ranked above ${esc(t.short)}, <span class="rk down">▼</span> below, by the ${esc(rk.describe)}, where ${esc(t.short)} ${rk.scope === "NPI" ? "is" : "are"} ${esc(rankName(rk.us, rk.scope))}.</p>`
         : rk ? `<p class="note legend">Opponent rankings appear once games have been played.</p>` : "";
       body = `${legend}<section class="block"><h2>Coming up</h2>${upcoming.length ? upcoming.map((g) => gameRowDated(g)).join("") : `<p class="empty">Nothing scheduled right now.</p>`}</section>
-        <section class="block"><h2>Results</h2>${done.length ? [...done].reverse().map((g) => gameRowDated(g)).join("") : `<p class="empty">No results yet this season.</p>`}</section>`;
+        <section class="block"><h2>Results</h2>${done.length ? [...done].reverse().map((g) => gameRowDated(g)).join("") : `<p class="empty">No results yet this season.</p>`}</section>
+        ${calendarBlock(key, `${t.short} games`)}`;
     } else if (tab === "standings") {
       body = (t.standings || []).map((s, i) => `<section class="block"><h2>${esc(s.title)}</h2>
         ${tableHtml(`st-${key}-${i}`, s.columns, s.rows, { nameCol: "team" })}
@@ -291,6 +316,7 @@
       <nav class="tabs" aria-label="${esc(t.name)} sections">${tabs.map(([k, l]) => `<a href="#/team/${key}/${k}"${k === tab ? ' aria-current="page"' : ""}>${l}</a>`).join("")}</nav>
       ${body}`;
     wireSort(() => viewTeam(key, tab));
+    wireCopy();
   }
 
   function gameRowDated(g) {

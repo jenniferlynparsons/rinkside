@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import iso_utc, norm_name, now_utc, parse_iso  # noqa: E402
 import college  # noqa: E402
 import iihf  # noqa: E402
+import ical  # noqa: E402
 import wiki  # noqa: E402
 from pwhl import PWHL  # noqa: E402
 from plan import plan  # noqa: E402
@@ -246,6 +247,10 @@ def main():
     meta["teams"] = [{"key": t["key"], "name": t["name"], "short": t["short"], "league": t["league"],
                       "color": t.get("color", "")} for t in cfg["teams"]]
     write_json(meta_path, meta)
+
+    # Calendar feeds, next to the data folder (published at <site>/calendar/…).
+    cal_dir = os.path.join(os.path.dirname(os.path.abspath(args.out)), "calendar")
+    print("calendars:", ", ".join(ical.write_calendars(cfg, args.out, cal_dir)) + ", all")
 
     # Save this run's output as the new fallback.
     shutil.copytree(args.out, last_good, dirs_exist_ok=True)

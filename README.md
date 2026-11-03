@@ -52,6 +52,20 @@ has no game-day lineups, so each game shows both teams' tournament rosters.
 (`fetch/iihf.py` still holds a parser for iihf.com, used if you set
 `iihf.source` to `"iihf"` in `config.json`.)
 
+## Calendar feeds
+
+Every refresh also writes calendar files next to the site:
+
+- `calendar/all.ics` — every team in one calendar
+- `calendar/princeton.ics`, `calendar/sirens.ics`, `calendar/usa.ics`, `calendar/can.ics`
+
+The home page and each team page have **Add to Google Calendar**, **Apple or
+Outlook**, and **Copy link** buttons for these. Events are in UTC (your calendar
+shows them in your time zone), home games start with 🏠, final scores are added
+to the title, and the description lists where to watch and links back to the
+game page. Event IDs stay the same, so changes update in place. Google refreshes
+subscribed calendars on its own schedule, usually every few hours.
+
 ## Set it up (one time, about 10 minutes)
 
 1. On GitHub, create a new **public** repository named `rinkside`. (Public

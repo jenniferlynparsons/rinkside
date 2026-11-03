@@ -231,3 +231,10 @@ table.grid td.n { font: 800 20px/1 var(--display); color: var(--c, var(--boards)
 .legend .rk { font-size: inherit; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .game .who { flex-wrap: wrap; }
+
+/* calendar subscription */
+.cal p { margin: 4px 0 10px; max-width: 60ch; }
+.calbtns { display: flex; flex-wrap: wrap; gap: 8px; }
+.calbtn { font: 700 15px/1 var(--body); padding: 10px 14px; border-radius: 8px; text-decoration: none; cursor: pointer;
+  background: var(--blueline); color: #fff; border: 1px solid var(--blueline); }
+.calbtn.alt { background: transparent; color: var(--blueline); }
