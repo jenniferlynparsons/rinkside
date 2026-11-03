@@ -1,0 +1,75 @@
+# Keeps the hockey data current without bothering the sources.
+#
+# The schedule wakes this up every 30 minutes, but fetch/plan.py usually
+# decides there's nothing to do and the run ends in a few seconds without
+# contacting any site. Sources are only read once a day, about an hour before
+# PWHL/IIHF games (for lineups), and after a game should be over.
+#
+# A push to main, or "Run workflow" on the Actions tab, does a full refresh.
+name: Refresh and publish
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The last good data, plus finished box scores, carried between runs.
+      - name: Restore data cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache
+          key: rinkside-${{ github.run_id }}
+          restore-keys: rinkside-
+
+      - name: Fetch what's needed
+        id: fetch
+        run: |
+          mode=auto
+          if [ "${{ github.event_name }}" != "schedule" ]; then mode=full; fi
+          python3 fetch/fetch.py --mode "$mode" --out _site/data --cache .cache
+
+      - name: Save data cache
+        if: steps.fetch.outputs.changed == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .cache
+          key: rinkside-${{ github.run_id }}
+
+      - name: Assemble site
+        if: steps.fetch.outputs.changed == 'true'
+        run: cp index.html style.css app.js config.json _site/ && cp -r assets _site/
+
+      - if: steps.fetch.outputs.changed == 'true'
+        uses: actions/configure-pages@v5
+      - if: steps.fetch.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        if: steps.fetch.outputs.changed == 'true'
+        uses: actions/deploy-pages@v4

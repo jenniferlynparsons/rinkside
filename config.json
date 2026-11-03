@@ -1,0 +1,96 @@
+{
+  "site_title": "Rinkside",
+  "teams": [
+    {
+      "key": "princeton",
+      "name": "Princeton Tigers",
+      "short": "Princeton",
+      "league": "NCAA · ECAC",
+      "color": "#E77500",
+      "source": "chn",
+      "source_label": "College Hockey News",
+      "display_name": "Princeton",
+      "chn": {
+        "name": "Princeton",
+        "id": 45,
+        "season": "20262027",
+        "conference": "ECAC"
+      }
+    },
+    {
+      "key": "sirens",
+      "name": "New York Sirens",
+      "short": "Sirens",
+      "league": "PWHL",
+      "color": "#14A9A0",
+      "source": "pwhl",
+      "source_label": "PWHL (HockeyTech)",
+      "pwhl": {
+        "team_name": "New York Sirens"
+      }
+    },
+    {
+      "key": "usa",
+      "name": "Team USA",
+      "short": "USA",
+      "league": "IIHF",
+      "color": "#2B4C9B",
+      "source": "iihf",
+      "source_label": "IIHF",
+      "iihf": {
+        "code": "USA",
+        "roster_slug": "united_states"
+      }
+    },
+    {
+      "key": "can",
+      "name": "Team Canada",
+      "short": "Canada",
+      "league": "IIHF",
+      "color": "#D52B1E",
+      "source": "iihf",
+      "source_label": "IIHF",
+      "iihf": {
+        "code": "CAN",
+        "roster_slug": "canada"
+      }
+    }
+  ],
+  "pwhl": {
+    "key": "694cfeed58c932ee",
+    "client_code": "pwhl"
+  },
+  "iihf": {
+    "path": "2026/ww",
+    "name": "2026 IIHF Women's World Championship",
+    "short": "Worlds",
+    "watch": [
+      {
+        "name": "NHL Network",
+        "region": "US",
+        "url": "https://www.nhl.com/nhl-network",
+        "note": "carried the 2025 Worlds and the October USA–Canada games — not yet confirmed for this event"
+      }
+    ],
+    "names": {
+      "USA": "United States",
+      "CAN": "Canada",
+      "SUI": "Switzerland",
+      "CZE": "Czechia",
+      "GER": "Germany",
+      "AUT": "Austria",
+      "SWE": "Sweden",
+      "FIN": "Finland",
+      "JPN": "Japan",
+      "DEN": "Denmark",
+      "SVK": "Slovakia",
+      "HUN": "Hungary",
+      "NOR": "Norway",
+      "FRA": "France",
+      "CHN": "China",
+      "ITA": "Italy"
+    }
+  },
+  "extra_games": [],
+  "display_timezone": "America/New_York"
+}
