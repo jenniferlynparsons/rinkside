@@ -62,7 +62,7 @@ jobs:
 
       - name: Assemble site
         if: steps.fetch.outputs.changed == 'true'
-        run: cp index.html style.css app.js config.json _site/ && cp -r assets _site/
+        run: cp index.html style.css app.js config.json _site/ && cp -r assets next _site/
 
       - if: steps.fetch.outputs.changed == 'true'
         uses: actions/configure-pages@v5
