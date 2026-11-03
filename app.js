@@ -4,7 +4,9 @@
 (() => {
   "use strict";
 
-  const DATA = "data/";
+  // A preview copy of the site (in /next/) reads the live data one folder up.
+  const BASE = document.documentElement.dataset.base || "";
+  const DATA = BASE + "data/";
   const state = { meta: null, teams: {}, loadedAt: 0, lineups: {}, sorts: {} };
   const $main = document.getElementById("main");
   const $nav = document.getElementById("teamnav");
@@ -64,6 +66,23 @@
     return { us, them, result, prefix };
   }
 
+  // Ink or white, whichever reads better on a team color.
+  function onColor(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+    if (!m) return "#fff";
+    const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+    const n = parseInt(m[1], 16);
+    const L = 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+    return (L + 0.05) / (0.0284 + 0.05) > 1.05 / (L + 0.05) ? "#14233A" : "#fff";  // ink #14233A ≈ L .0284
+  }
+  const teamVars = (key) => { const c = teamOf(key).color || "#14233A"; return `--c:${esc(c)};--on:${onColor(c)}`; };
+  // "Princeton vs Colgate": team names strong, the vs/at light.
+  function matchup(g, showTeam = true) {
+    const p = perspective(g);
+    return `${showTeam ? `<span class="tm">${esc(teamOf(g.team).short)}</span> ` : ""}<span class="vs">${p.prefix}</span> <span class="tm">${esc(p.them.name)}</span>`;
+  }
+  const meta = (g) => [g.comp, g.venue].filter(Boolean).map(esc).join(" — ");
+
   const isHome = (g) => g.side === "home" && !g.neutral;
   const homeBadge = (g) => (isHome(g) ? `<span class="homebadge">Home</span>` : "");
   const ordinal = (n) => n + (["th", "st", "nd", "rd"][(n % 100 > 10 && n % 100 < 14) ? 0 : n % 10] || "th");
@@ -79,12 +98,12 @@
     const sym = { up: "▲", down: "▼", level: "=" }[dir];
     const words = { up: "ranked above", down: "ranked below", level: "level with" }[dir];
     const title = `${them} ${words} ${us}: ${rankName(r.them, r.scope)}, ${us} ${rankName(r.us, r.scope)}`;
-    return `<span class="rk ${dir}" title="${esc(title)}"><span aria-hidden="true">${sym}</span><span class="sr">${esc(words)} ${esc(us)},</span> ${esc(rankName(r.them, r.scope))}</span>`;
+    return `<span class="rk ${dir}" title="${esc(title)}"><span aria-hidden="true">${sym}</span> ${esc(them)} ${esc(words)} ${esc(us)} (${esc(rankName(r.them, r.scope))})</span>`;
   }
 
   // Calendar subscription links for calendar/<key>.ics (published next to the site).
   function calendarBlock(key, label) {
-    const https = new URL(`calendar/${key}.ics`, location.href.split("#")[0]).href;
+    const https = new URL(`${BASE}calendar/${key}.ics`, location.href.split("#")[0]).href;
     const webcal = https.replace(/^https?:/, "webcal:");
     const google = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}`;
     return `<section class="block cal"><h2>In your calendar</h2>
@@ -108,15 +127,15 @@
     list = (list || []).filter((w) => w.region !== "Canada");  // US viewer
     if (!list.length) return "";
     const pill = (w) => {
-      const rg = "";
+      const rg = w.note ? ` <span class="unc">not confirmed</span>` : "";
       const cls = "pill" + (w.note ? " unconfirmed" : "");
       const title = w.note ? ` title="${esc(w.note)}"` : "";
-      const label = esc(w.name) + (w.note ? "?" : "");
+      const label = esc(w.name);
       return w.url
         ? `<a class="${cls}" href="${esc(w.url)}" target="_blank" rel="noopener"${title}>${label}${rg}</a>`
         : `<span class="${cls}"${title}>${label}${rg}</span>`;
     };
-    return `<div class="watch">${list.map(pill).join("")}</div>`;
+    return `<div class="watch"><span class="lbl">Watch</span>${list.map(pill).join("")}</div>`;
   }
 
   function scoreHtml(g) {
@@ -131,20 +150,46 @@
     return "";
   }
 
-  function gameRow(g, { showTeam = true } = {}) {
+  // A game as a ticket: team-color stub with the time, perforation, details.
+  function stubHtml(g, dated) {
+    const d = new Date(g.start);
     const p = perspective(g);
-    const sub = [g.comp, g.venue].filter(Boolean).map(esc).join(" — ");
-    const right = g.status === "scheduled" ? "" : scoreHtml(g);
-    return `<div class="game${isHome(g) ? " home" : ""}" style="--c:${esc(teamOf(g.team).color)}">
-      <div class="t">${g.status === "final" ? "Final" : g.status === "live" || started(g) ? "Started" : esc(timeLabel(g))}</div>
-      <div>
-        <div class="who">${showTeam ? dot(g.team) : ""}${homeBadge(g)}<a class="opp" href="#/game/${encodeURIComponent(g.id)}">${showTeam ? esc(teamOf(g.team).short) + " " : ""}<span class="ha">${p.prefix}</span> ${esc(p.them.name)}</a></div>
-        ${right ? `<div>${right}</div>` : ""}
-        <div class="sub">${sub}</div>
-        ${started(g) ? `<div class="sub">Score posts after the final horn.</div>` : ""}
-        ${g.status !== "final" ? watchHtml(g.watch) : ""}
+    let big, small;
+    if (g.status === "live") { big = `${p.us.score ?? 0}–${p.them.score ?? 0}`; small = "Live"; }
+    else if (started(g)) { big = "On"; small = "now"; }
+    else if (dated) { big = esc(fDay.format(d).split(", ")[1] || ""); small = esc(fDay.format(d).split(",")[0]) + (g.tbd ? "" : " " + esc(timeLabel(g))); }
+    else if (g.tbd) { big = "TBA"; small = ""; }
+    else { const [hm, ap] = timeLabel(g).split(" "); big = esc(hm); small = esc(ap || ""); }
+    return `<div class="stub"><div class="big">${big}</div><div class="small">${small}</div>${isHome(g) ? `<div class="home">Home</div>` : ""}</div>`;
+  }
+  function ticket(g, { showTeam = true, dated = false } = {}) {
+    return `<article class="ticket${isHome(g) ? " is-home" : ""}" style="${teamVars(g.team)}">
+      ${stubHtml(g, dated)}
+      <div class="body">
+        <h3 class="mu"><a class="opp" href="#/game/${encodeURIComponent(g.id)}">${matchup(g, showTeam)}</a></h3>
+        <div class="sub">${meta(g)}</div>
+        ${started(g) ? `<div class="sub">The score posts after the final horn.</div>` : ""}
+        ${g.rank ? `<div class="sub">${rankTag(g)}</div>` : ""}
+        ${watchHtml(g.watch)}
       </div>
-    </div>`;
+    </article>`;
+  }
+  // A finished game (from direction A): matchup left, big score right, result under it.
+  function result(g, { showTeam = true } = {}) {
+    const p = perspective(g);
+    const d = new Date(g.start);
+    const extra = (g.statusText || "").match(/\b(OT|SO|\dOT)\b/i)?.[0];
+    const word = { W: "Win", L: "Loss", T: "Tie" }[p.result] || "Final";
+    return `<article class="result" style="${teamVars(g.team)}">
+      <div>
+        <h3 class="mu"><a class="opp" href="#/game/${encodeURIComponent(g.id)}">${matchup(g, showTeam)}</a></h3>
+        <div class="sub">${esc(fDay.format(d))} — ${esc(g.comp)}${isHome(g) ? ", home" : ""}</div>
+      </div>
+      <div class="final">
+        <div class="score">${p.us.score}–${p.them.score}</div>
+        <div class="wl ${p.result}">${word}${extra ? " " + esc(extra.toUpperCase()) : ""}</div>
+      </div>
+    </article>`;
   }
 
   function allGames(filter) {
@@ -170,14 +215,15 @@
         days.get(k).games.push(g);
       }
       return [...days.values()].map(({ d, games }) => {
-        const today = dayKey(d) === dayKey(new Date());
-        return `<section class="day${today ? " today" : ""}"><h2>${esc(dayLabel(d))}</h2>${games.map((g) => gameRow(g, { showTeam })).join("")}</section>`;
+        const lbl = dayLabel(d);
+        const head = lbl === "Today" || lbl === "Tomorrow" ? `${lbl} <span class="vs">${esc(fLong.format(d))}</span>` : esc(fLong.format(d));
+        return `<section class="day"><h2 class="dayhead${lbl === "Today" ? " today" : ""}">${head}</h2><div class="stack">${games.map((g) => ticket(g, { showTeam })).join("")}</div></section>`;
       }).join("");
     };
     let html = "";
-    if (past.length) html += byDay(past);
+    if (past.length) html += `<section class="day"><h2 class="dayhead">Final</h2><div class="stack">${[...past].reverse().map((g) => result(g, { showTeam })).join("")}</div></section>`;
     html += `<div class="nowline" role="separator">${live.length ? "Live now" : "Now"}</div>`;
-    if (live.length) html += `<section class="day today">${live.map((g) => gameRow(g, { showTeam })).join("")}</section>`;
+    if (live.length) html += `<section class="day"><div class="stack">${live.map((g) => ticket(g, { showTeam })).join("")}</div></section>`;
     html += future.length ? byDay(future) : `<p class="empty">No upcoming games on the schedule yet.</p>`;
     return html;
   }
@@ -197,21 +243,26 @@
       const p = perspective(next);
       const d = new Date(next.start);
       const live = next.status === "live";
-      hero = `<section class="hero${live ? " live" : ""}" aria-label="Next game">
-        <div class="when"><small>${live ? "Live now" : started(next) ? "Started at " + esc(fTime.format(d)) + ", score posts after the game" : esc(dayLabel(d) === fDay.format(d) ? fLong.format(d) : dayLabel(d))}</small>${live ? `${p.us.score ?? 0}–${p.them.score ?? 0}` : started(next) ? "Underway" : esc(timeLabel(next))}</div>
-        <div class="match">${dot(next.team)}<strong>${esc(teamOf(next.team).name)}</strong> <span>${p.prefix} ${esc(p.them.name)}</span>${homeBadge(next)}</div>
-        <div class="meta">${[next.comp, next.venue].filter(Boolean).map(esc).join(" — ")}</div>
+      const day = dayLabel(d);
+      const when = live ? `${p.us.score ?? 0}–${p.them.score ?? 0}`
+        : started(next) ? "On now"
+        : `${esc(day === "Today" || day === "Tomorrow" ? day : fDay.format(d).split(",")[0])} ${esc(next.tbd ? "TBA" : timeLabel(next).replace(/ (AM|PM)$/, ""))}${next.tbd ? "" : `<span class="ap"> ${esc(timeLabel(next).split(" ")[1] || "")}</span>`}`;
+      hero = `<section class="hero${live ? " live" : ""}" aria-label="Next game" style="${teamVars(next.team)}">
+        <div class="kicker">${live ? "Live now" : started(next) ? "Underway — score after the final horn" : "Next puck drop"}${isHome(next) ? `<span class="home">Home</span>` : ""}</div>
+        <div class="when">${when}</div>
+        <h2 class="mu">${matchup(next, true)}</h2>
+        <div class="sub">${esc(fLong.format(d))} — ${meta(next)}</div>
         ${watchHtml(next.watch)}
         <a class="more" href="#/game/${encodeURIComponent(next.id)}">${live || next.lineup ? "Lineups and details" : "Game details"}</a>
       </section>`;
     }
     const filters = state.meta.teams.map((t) =>
-      `<button type="button" data-team="${esc(t.key)}" aria-pressed="${filter.includes(t.key)}">${dot(t.key)}${esc(t.short)}</button>`).join("");
+      `<button type="button" data-team="${esc(t.key)}" aria-pressed="${filter.includes(t.key)}" style="${teamVars(t.key)}">${esc(t.short)}</button>`).join("");
 
     const latest = filter.map(updatedOf).filter(Boolean).sort().pop();
     $main.innerHTML = `${hero}
       <p class="updated">Last updated ${esc(stamp(latest))}</p>
-      <div class="filters" role="group" aria-label="Show games for"><span class="lbl">Showing</span>${filters}</div>
+      <div class="filters" role="group" aria-label="Show games for"><span class="lbl">Show</span>${filters}</div>
       ${agenda(games)}
       ${calendarBlock("all", "games for all four teams")}`;
     wireCopy();
@@ -281,8 +332,8 @@
       const legend = rk && rk.us
         ? `<p class="note legend"><span class="rk up">▲</span> ranked above ${esc(t.short)}, <span class="rk down">▼</span> below, by the ${esc(rk.describe)}, where ${esc(t.short)} ${rk.scope === "NPI" ? "is" : "are"} ${esc(rankName(rk.us, rk.scope))}.</p>`
         : rk ? `<p class="note legend">Opponent rankings appear once games have been played.</p>` : "";
-      body = `${legend}<section class="block"><h2>Coming up</h2>${upcoming.length ? upcoming.map((g) => gameRowDated(g)).join("") : `<p class="empty">Nothing scheduled right now.</p>`}</section>
-        <section class="block"><h2>Results</h2>${done.length ? [...done].reverse().map((g) => gameRowDated(g)).join("") : `<p class="empty">No results yet this season.</p>`}</section>
+      body = `${legend}<section class="block"><h2>Coming up</h2>${upcoming.length ? `<div class="stack">${upcoming.map((g) => ticket(g, { showTeam: false, dated: true })).join("")}</div>` : `<p class="empty">Nothing scheduled right now.</p>`}</section>
+        <section class="block"><h2>Results</h2>${done.length ? `<div class="stack">${[...done].reverse().map((g) => result(g, { showTeam: false })).join("")}</div>` : `<p class="empty">No results yet this season.</p>`}</section>
         ${calendarBlock(key, `${t.short} games`)}`;
     } else if (tab === "standings") {
       body = (t.standings || []).map((s, i) => `<section class="block"><h2>${esc(s.title)}</h2>
@@ -301,6 +352,7 @@
       else {
         const groups = {};
         for (const p of players) (groups[POS_GROUP(p.pos)] ||= []).push(p);
+        for (const k in groups) groups[k].sort((a, b) => (parseInt(a.num, 10) || 999) - (parseInt(b.num, 10) || 999));
         body = `<section class="block"><h2>${esc(t.roster.title)}</h2>${["Forwards", "Defense", "Goalies", "Players"].filter((g) => groups[g])
           .map((g) => `<h3 class="posgroup">${g}</h3>${playerList(groups[g], key)}`).join("")}</section>`;
       }
@@ -312,26 +364,11 @@
         ${s.goalies?.rows?.length ? `<section class="block"><h2>Goalies</h2>${tableHtml(`gk-${key}`, s.goalies.columns, s.goalies.rows, { team: key })}</section>` : ""}`;
     }
     const rec = t.record ? `${t.record} overall` : "";
-    $main.innerHTML = `<div class="teamhead">${dot(key)}<div><h1>${esc(t.name)}</h1><p>${[t.league, t.event, rec].filter(Boolean).map(esc).join(" — ")}</p><p class="updated">Updated ${esc(stamp(updatedOf(key)))}</p></div></div>
-      <nav class="tabs" aria-label="${esc(t.name)} sections">${tabs.map(([k, l]) => `<a href="#/team/${key}/${k}"${k === tab ? ' aria-current="page"' : ""}>${l}</a>`).join("")}</nav>
-      ${body}`;
+    $main.innerHTML = `<div class="teamhead" style="${teamVars(key)}"><h1>${esc(t.name)}</h1><p>${[t.league, t.event, rec].filter(Boolean).map(esc).join(" — ")}</p><p class="updated">Updated ${esc(stamp(updatedOf(key)))}</p>
+      <nav class="tabs" aria-label="${esc(t.name)} sections">${tabs.map(([k, l]) => `<a href="#/team/${key}/${k}"${k === tab ? ' aria-current="page"' : ""}>${l}</a>`).join("")}</nav></div>
+      <div class="teambody">${body}</div>`;
     wireSort(() => viewTeam(key, tab));
     wireCopy();
-  }
-
-  function gameRowDated(g) {
-    // Team pages: the date matters more than the team dot.
-    const d = new Date(g.start);
-    const p = perspective(g);
-    const sub = [g.comp, g.venue].filter(Boolean).map(esc).join(" — ");
-    return `<div class="game${isHome(g) ? " home" : ""}" style="--c:${esc(teamOf(g.team).color)}">
-      <div class="t">${esc(fDay.format(d).split(",")[1]?.trim() || fDay.format(d))}<small>${esc(fDay.format(d).split(",")[0])}${g.status === "final" ? "" : ", " + esc(timeLabel(g))}</small></div>
-      <div>
-        <div class="who">${homeBadge(g)}<a class="opp" href="#/game/${encodeURIComponent(g.id)}"><span class="ha">${p.prefix}</span> ${esc(p.them.name)}</a>${g.status !== "final" ? rankTag(g) : ""}</div>
-        ${g.status !== "scheduled" ? `<div>${scoreHtml(g)}</div>` : ""}
-        <div class="sub">${sub}</div>
-        ${g.status !== "final" ? watchHtml(g.watch) : ""}
-      </div></div>`;
   }
 
   async function viewGame(id) {
@@ -343,15 +380,15 @@
       ? `${esc(timeLabel(g))}<small>${esc(dayLabel(d))}</small>`
       : `${g.away.score ?? 0}–${g.home.score ?? 0}<small>${g.status === "live" ? '<span class="live-tag">Live</span>' : esc(g.statusText || "Final")}</small>`;
     const links = (g.links || []).map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join(", ");
-    $main.innerHTML = `<div class="gamehead">
-        <div class="comp">${dot(g.team)} ${esc(teamOf(g.team).name)} — ${esc(g.comp)}</div>
+    $main.innerHTML = `<div class="gamehead" style="${teamVars(g.team)}">
+        <div class="kicker">${esc(teamOf(g.team).name)} — ${esc(g.comp)}${isHome(g) ? `<span class="home">Home</span>` : ""}</div>
         <div class="board">
           <div class="side">${esc(g.away.name)}<small>${g.neutral ? "" : "Away"}</small></div>
           <div class="mid">${mid}</div>
           <div class="side away">${esc(g.home.name)}<small>${g.neutral ? "" : "Home"}</small></div>
         </div>
         <dl class="facts">
-          ${g.rank ? `<dt>Ranking</dt><dd>${rankTag(g)} <span class="note">vs ${esc(teamOf(g.team).short)} at ${esc(rankName(g.rank.us, g.rank.scope))}</span></dd>` : ""}
+          ${g.rank ? `<dt>Ranking</dt><dd>${rankTag(g)}; ${esc(teamOf(g.team).short)} is ${esc(rankName(g.rank.us, g.rank.scope))}</dd>` : ""}
           ${isHome(g) ? `<dt>Home</dt><dd>${esc(teamOf(g.team).short)} at home</dd>` : ""}
           <dt>When</dt><dd>${g.tbd ? esc(fLong.format(d)) + ", time to be announced" : esc(fFull.format(d))}</dd>
           ${g.venue ? `<dt>Where</dt><dd>${esc(g.venue)}</dd>` : ""}
@@ -400,8 +437,9 @@
 
   // ------------------------------------------------------------ chrome
   function renderNav(route) {
-    $nav.innerHTML = state.meta.teams.map((t) =>
-      `<a href="#/team/${esc(t.key)}" style="--c:${esc(t.color)}"${route[0] === "team" && route[1] === t.key ? ' aria-current="page"' : ""}>${esc(t.short)}</a>`).join("");
+    const home = !route[0] || (route[0] !== "team" && route[0] !== "game");
+    $nav.innerHTML = `<a href="#/"${home ? ' aria-current="page"' : ""}>All</a>` + state.meta.teams.map((t) =>
+      `<a href="#/team/${esc(t.key)}" style="--c:${esc(t.color)}"${route[0] === "team" && route[1] === t.key ? ' aria-current="page"' : ""}>${esc(t.key === "can" ? "CAN" : t.short)}</a>`).join("");
   }
   function renderFoot() {
     const src = Object.entries(state.meta.sources || {});
