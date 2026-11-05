@@ -70,8 +70,9 @@ h1, h2, h3 { margin: 0; line-height: 1.1; }
 }
 .kicker { display: flex; align-items: center; gap: 10px; font-weight: 800; font-stretch: 75%; font-size: 19px; letter-spacing: .02em; text-transform: uppercase; color: var(--ink-soft); }
 .hero.live .kicker { color: var(--red); }
-.hero .when { white-space: nowrap; font-weight: 900; font-stretch: 62%; font-size: clamp(64px, 19vw, 88px); line-height: .9; margin-top: 4px; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.hero .when { font-weight: 900; font-stretch: 62%; font-size: clamp(64px, 19vw, 88px); line-height: .9; margin-top: 4px; text-transform: uppercase; font-variant-numeric: tabular-nums; }
 .hero .when .ap { font-size: .5em; }
+.hero .when .wd, .hero .when .tm { white-space: nowrap; }  /* may wrap between day and time, never inside */
 .hero.live .when { color: var(--red); }
 .hero .mu { font-weight: 800; font-size: 25px; margin-top: 10px; }
 .hero .sub { font-size: 16px; color: var(--ink-soft); margin-top: 2px; }

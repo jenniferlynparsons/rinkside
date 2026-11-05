@@ -203,7 +203,9 @@
 
   function agenda(games, { showTeam = true, pastDays = 4, futureDays = 21, minFuture = 5 } = {}) {
     const now = Date.now();
-    const past = games.filter((g) => g.status === "final" && now - new Date(g.start) < pastDays * 864e5);
+    const finals = games.filter((g) => g.status === "final");
+    let past = finals.filter((g) => now - new Date(g.start) < pastDays * 864e5);
+    if (!past.length && finals.length) past = finals.slice(-1);  // always show the most recent result
     const live = games.filter((g) => g.status === "live");
     let future = games.filter((g) => g.status === "scheduled" && new Date(g.start) - now < futureDays * 864e5 && new Date(g.start) > now - 6 * 36e5);
     if (future.length < minFuture) future = games.filter((g) => g.status === "scheduled" && new Date(g.start) > now - 6 * 36e5).slice(0, minFuture);
@@ -246,9 +248,10 @@
       const day = dayLabel(d);
       const when = live ? `${p.us.score ?? 0}–${p.them.score ?? 0}`
         : started(next) ? "On now"
-        : `${esc(day === "Today" || day === "Tomorrow" ? day : fDay.format(d).split(",")[0])} ${esc(next.tbd ? "TBA" : timeLabel(next).replace(/ (AM|PM)$/, ""))}${next.tbd ? "" : `<span class="ap"> ${esc(timeLabel(next).split(" ")[1] || "")}</span>`}`;
+        : `<span class="wd">${esc(fDay.format(d).split(",")[0])}</span> <span class="tm">${esc(next.tbd ? "TBA" : timeLabel(next).replace(/ (AM|PM)$/, ""))}${next.tbd ? "" : `<span class="ap"> ${esc(timeLabel(next).split(" ")[1] || "")}</span>`}</span>`;
+      const soon = day === "Today" || day === "Tomorrow" ? ` — ${day.toLowerCase()}` : "";
       hero = `<section class="hero${live ? " live" : ""}" aria-label="Next game" style="${teamVars(next.team)}">
-        <div class="kicker">${live ? "Live now" : started(next) ? "Underway — score after the final horn" : "Next puck drop"}${isHome(next) ? `<span class="home">Home</span>` : ""}</div>
+        <div class="kicker">${live ? "Live now" : started(next) ? "Underway — score after the final horn" : `Next puck drop${soon}`}${isHome(next) ? `<span class="home">Home</span>` : ""}</div>
         <div class="when">${when}</div>
         <h2 class="mu">${matchup(next, true)}</h2>
         <div class="sub">${esc(fLong.format(d))} — ${meta(next)}</div>
