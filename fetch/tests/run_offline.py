@@ -271,13 +271,13 @@ def main():
     assert all(len(line.encode()) <= 75 for line in allics.split("\r\n")), "lines must be folded"
     unfolded = allics.replace("\r\n ", "")
     assert "SUMMARY:🏠 Princeton vs Colgate" in unfolded
-    assert "SUMMARY:Princeton vs Yale — W 2–1" in unfolded.replace("🏠 ", "")
+    assert "SUMMARY:🏠 Princeton vs Yale\r\n" in allics.replace("\r\n ", "")      # no score: spoilers
     assert "DTSTART:20261106T230000Z" in unfolded                   # 6 pm ET
     assert "UID:ncaa-20261106-colgate@rinkside" in unfolded
     assert "Watch: ESPN+" in unfolded and "Colgate is ranked below Princeton (NPI: 5 vs 2)" in unfolded
     assert "LOCATION:Hobey Baker Rink\\, Princeton\\, N.J." in unfolded
     usics = open(os.path.join(cal, "usa.ics"), newline="").read().replace("\r\n ", "")
-    assert "X-WR-CALNAME:Team USA — Rinkside" in usics and "Watch: NHL Network?" in usics
+    assert "X-WR-CALNAME:Team USA — Rinkside" in usics and "Watch: NHL Network\\n" in usics
     assert unfolded.count("BEGIN:VEVENT") == sum(len(load("teams", f"{k}.json")["games"]) for k in ("princeton", "sirens", "usa", "can"))
 
     print("\nAll offline checks passed. Sample data in", out)

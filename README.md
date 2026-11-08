@@ -61,8 +61,8 @@ Every refresh also writes calendar files next to the site:
 
 The home page and each team page have **Add to Google Calendar**, **Apple or
 Outlook**, and **Copy link** buttons for these. Events are in UTC (your calendar
-shows them in your time zone), home games start with 🏠, final scores are added
-to the title, and the description lists where to watch and links back to the
+shows them in your time zone), home games start with 🏠, scores are left out
+(no spoilers), and the description lists where to watch and links back to the
 game page. Event IDs stay the same, so changes update in place. Google refreshes
 subscribed calendars on its own schedule, usually every few hours.
 
@@ -122,6 +122,16 @@ cp -r fetch/tests/sample-data data   # sample data (made-up stats) for previewin
   ```
   Add `"our_score"` and `"their_score"` after the game to show the result.
 - **Princeton's season:** `chn.season` (`20272028` next year).
+
+## Spoiler protection
+
+Scores from the last 7 days are hidden behind a **Reveal score** button, along
+with anything that would give the result away: goal scorers, players' goals
+and saves in the lineup, the team's record, opponent rankings, and the
+Standings and Stats tabs (those have a **Show anyway** button for a quick look
+without revealing the game). A revealed game stays revealed in that browser, so
+your phone and laptop each keep their own list. **Always show scores** at the
+bottom of the page turns it off. The calendar feeds never include scores.
 
 ## Things to know
 

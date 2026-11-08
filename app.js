@@ -7,7 +7,7 @@
   // A preview copy of the site (in /next/) reads the live data one folder up.
   const BASE = document.documentElement.dataset.base || "";
   const DATA = BASE + "data/";
-  const state = { meta: null, teams: {}, loadedAt: 0, lineups: {}, sorts: {} };
+  const state = { meta: null, teams: {}, loadedAt: 0, lineups: {}, sorts: {}, peek: {} };
   const $main = document.getElementById("main");
   const $nav = document.getElementById("teamnav");
   const $foot = document.getElementById("foot");
@@ -83,6 +83,32 @@
   }
   const meta = (g) => [g.comp, g.venue].filter(Boolean).map(esc).join(" — ");
 
+  // ---- Spoiler protection: results from the last week stay hidden until
+  // revealed. Reveals are remembered in this browser; "peek" is just for
+  // this visit (standings and stats that include a hidden result).
+  const HIDE_DAYS = 7;
+  const spoilersOn = () => store.get("rinkside.hideScores", true);
+  function revealedMap() {
+    const m = store.get("rinkside.revealed", {});
+    const cutoff = Date.now() - 60 * 864e5;            // forget reveals after two months
+    for (const k of Object.keys(m)) if (m[k] < cutoff) delete m[k];
+    return m;
+  }
+  const isHidden = (g) => spoilersOn() && (g.status === "final" || g.status === "live")
+    && Date.now() - new Date(g.start) < HIDE_DAYS * 864e5 && !revealedMap()[g.id];
+  const hiddenFor = (key) => (state.teams[key]?.games || []).filter(isHidden);
+  const revealBtn = (g, label = "Reveal score") => `<button type="button" class="reveal" data-reveal="${esc(g.id)}">${label}</button>`;
+  function wireSpoilers() {
+    $main.querySelectorAll("[data-reveal]").forEach((b) => b.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const m = revealedMap(); m[b.dataset.reveal] = Date.now(); store.set("rinkside.revealed", m);
+      const y = window.scrollY; route(); window.scrollTo(0, y);
+    }));
+    $main.querySelectorAll("[data-peek]").forEach((b) => b.addEventListener("click", () => {
+      state.peek[b.dataset.peek] = true; const y = window.scrollY; route(); window.scrollTo(0, y);
+    }));
+  }
+
   const isHome = (g) => g.side === "home" && !g.neutral;
   const homeBadge = (g) => (isHome(g) ? `<span class="homebadge">Home</span>` : "");
   const ordinal = (n) => n + (["th", "st", "nd", "rd"][(n % 100 > 10 && n % 100 < 14) ? 0 : n % 10] || "th");
@@ -92,6 +118,7 @@
   function rankTag(g) {
     const r = g.rank;
     if (!r) return "";
+    if (hiddenFor(g.team).length && !state.peek[g.team]) return "";  // rankings move with results
     const them = perspective(g).them.name;
     const us = teamOf(g.team).short;
     const dir = r.them < r.us ? "up" : r.them > r.us ? "down" : "level";
@@ -107,7 +134,7 @@
     const webcal = https.replace(/^https?:/, "webcal:");
     const google = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}`;
     return `<section class="block cal"><h2>In your calendar</h2>
-      <p>Subscribe once and ${esc(label)} stay up to date: new games, time changes and final scores, with the channel in each event.</p>
+      <p>Subscribe once and ${esc(label)} stay up to date: new games and time changes, with the channel in each event. Scores are left out so nothing gets spoiled.</p>
       <div class="calbtns">
         <a class="calbtn" href="${esc(google)}" target="_blank" rel="noopener">Add to Google Calendar</a>
         <a class="calbtn alt" href="${esc(webcal)}">Apple or Outlook</a>
@@ -155,7 +182,7 @@
     const d = new Date(g.start);
     const p = perspective(g);
     let big, small;
-    if (g.status === "live") { big = `${p.us.score ?? 0}–${p.them.score ?? 0}`; small = "Live"; }
+    if (g.status === "live") { big = isHidden(g) ? "Live" : `${p.us.score ?? 0}–${p.them.score ?? 0}`; small = isHidden(g) ? "" : "Live"; }
     else if (started(g)) { big = "On"; small = "now"; }
     else if (dated) { big = esc(fDay.format(d).split(", ")[1] || ""); small = esc(fDay.format(d).split(",")[0]) + (g.tbd ? "" : " " + esc(timeLabel(g))); }
     else if (g.tbd) { big = "TBA"; small = ""; }
@@ -169,6 +196,7 @@
         <h3 class="mu"><a class="opp" href="#/game/${encodeURIComponent(g.id)}">${matchup(g, showTeam)}</a></h3>
         <div class="sub">${meta(g)}</div>
         ${started(g) ? `<div class="sub">The score posts after the final horn.</div>` : ""}
+        ${g.status === "live" && isHidden(g) ? `<div class="sub">${revealBtn(g)}</div>` : ""}
         ${g.rank ? `<div class="sub">${rankTag(g)}</div>` : ""}
         ${watchHtml(g.watch)}
       </div>
@@ -185,10 +213,10 @@
         <h3 class="mu"><a class="opp" href="#/game/${encodeURIComponent(g.id)}">${matchup(g, showTeam)}</a></h3>
         <div class="sub">${esc(fDay.format(d))} — ${esc(g.comp)}${isHome(g) ? ", home" : ""}</div>
       </div>
-      <div class="final">
+      ${isHidden(g) ? `<div class="final">${revealBtn(g)}</div>` : `<div class="final">
         <div class="score">${p.us.score}–${p.them.score}</div>
         <div class="wl ${p.result}">${word}${extra ? " " + esc(extra.toUpperCase()) : ""}</div>
-      </div>
+      </div>`}
     </article>`;
   }
 
@@ -246,7 +274,7 @@
       const d = new Date(next.start);
       const live = next.status === "live";
       const day = dayLabel(d);
-      const when = live ? `${p.us.score ?? 0}–${p.them.score ?? 0}`
+      const when = live ? (isHidden(next) ? "Live" : `${p.us.score ?? 0}–${p.them.score ?? 0}`)
         : started(next) ? "On now"
         : `<span class="wd">${esc(fDay.format(d).split(",")[0])}</span> <span class="tm">${esc(next.tbd ? "TBA" : timeLabel(next).replace(/ (AM|PM)$/, ""))}${next.tbd ? "" : `<span class="ap"> ${esc(timeLabel(next).split(" ")[1] || "")}</span>`}</span>`;
       const soon = day === "Today" || day === "Tomorrow" ? ` — ${day.toLowerCase()}` : "";
@@ -255,6 +283,7 @@
         <div class="when">${when}</div>
         <h2 class="mu">${matchup(next, true)}</h2>
         <div class="sub">${esc(fLong.format(d))} — ${meta(next)}</div>
+        ${live && isHidden(next) ? `<div class="sub">${revealBtn(next)}</div>` : ""}
         ${watchHtml(next.watch)}
         <a class="more" href="#/game/${encodeURIComponent(next.id)}">${live || next.lineup ? "Lineups and details" : "Game details"}</a>
       </section>`;
@@ -269,6 +298,7 @@
       ${agenda(games)}
       ${calendarBlock("all", "games for all four teams")}`;
     wireCopy();
+    wireSpoilers();
     $main.querySelectorAll(".filters button").forEach((b) => b.addEventListener("click", () => {
       const k = b.dataset.team;
       let f = store.get("rinkside.filter", keys);
@@ -325,6 +355,13 @@
     const t = state.teams[key];
     if (!t) { $main.innerHTML = `<p class="empty">That team isn't in the data yet. <a href="#/">Back to all games</a></p>`; return; }
     tab = tab || "games";
+    const secret = hiddenFor(key).length && !state.peek[key];
+    const gate = (what) => {
+      const gs = hiddenFor(key);
+      const names = gs.map((g) => `${perspective(g).prefix} ${perspective(g).them.name} (${fDay.format(new Date(g.start))})`).join(", ");
+      return `<div class="gate"><p>${esc(what)} include${what.endsWith("s") ? "" : "s"} ${gs.length > 1 ? "results" : "the result"} you haven't revealed yet: ${esc(names)}.</p>
+        <button type="button" class="reveal" data-peek="${esc(key)}">Show anyway</button></div>`;
+    };
     const tabs = [["games", "Games"], ["standings", "Standings"], ["roster", "Roster"], ["stats", "Stats"]];
     let body = "";
     if (tab === "games") {
@@ -332,12 +369,17 @@
       const upcoming = games.filter((g) => g.status !== "final");
       const done = games.filter((g) => g.status === "final");
       const rk = t.ranking;
-      const legend = rk && rk.us
+      const legend = secret && rk ? `<p class="note legend">Opponent rankings are hidden until you reveal the latest scores.</p>`
+        : rk && rk.us
         ? `<p class="note legend"><span class="rk up">▲</span> ranked above ${esc(t.short)}, <span class="rk down">▼</span> below, by the ${esc(rk.describe)}, where ${esc(t.short)} ${rk.scope === "NPI" ? "is" : "are"} ${esc(rankName(rk.us, rk.scope))}.</p>`
         : rk ? `<p class="note legend">Opponent rankings appear once games have been played.</p>` : "";
       body = `${legend}<section class="block"><h2>Coming up</h2>${upcoming.length ? `<div class="stack">${upcoming.map((g) => ticket(g, { showTeam: false, dated: true })).join("")}</div>` : `<p class="empty">Nothing scheduled right now.</p>`}</section>
         <section class="block"><h2>Results</h2>${done.length ? `<div class="stack">${[...done].reverse().map((g) => result(g, { showTeam: false })).join("")}</div>` : `<p class="empty">No results yet this season.</p>`}</section>
         ${calendarBlock(key, `${t.short} games`)}`;
+    } else if (tab === "standings" && secret) {
+      body = gate("The standings");
+    } else if (tab === "stats" && secret) {
+      body = gate("The stats");
     } else if (tab === "standings") {
       body = (t.standings || []).map((s, i) => `<section class="block"><h2>${esc(s.title)}</h2>
         ${tableHtml(`st-${key}-${i}`, s.columns, s.rows, { nameCol: "team" })}
@@ -366,12 +408,13 @@
         ${s.skaters?.rows?.length ? `<section class="block"><h2>Skaters</h2>${tableHtml(`sk-${key}`, s.skaters.columns, s.skaters.rows, { team: key })}</section>` : ""}
         ${s.goalies?.rows?.length ? `<section class="block"><h2>Goalies</h2>${tableHtml(`gk-${key}`, s.goalies.columns, s.goalies.rows, { team: key })}</section>` : ""}`;
     }
-    const rec = t.record ? `${t.record} overall` : "";
+    const rec = t.record ? (secret ? "record hidden until you reveal the latest scores" : `${t.record} overall`) : "";
     $main.innerHTML = `<div class="teamhead" style="${teamVars(key)}"><h1>${esc(t.name)}</h1><p>${[t.league, t.event, rec].filter(Boolean).map(esc).join(" — ")}</p><p class="updated">Updated ${esc(stamp(updatedOf(key)))}</p>
       <nav class="tabs" aria-label="${esc(t.name)} sections">${tabs.map(([k, l]) => `<a href="#/team/${key}/${k}"${k === tab ? ' aria-current="page"' : ""}>${l}</a>`).join("")}</nav></div>
       <div class="teambody">${body}</div>`;
     wireSort(() => viewTeam(key, tab));
     wireCopy();
+    wireSpoilers();
   }
 
   async function viewGame(id) {
@@ -379,8 +422,10 @@
     if (!g) { $main.innerHTML = `<p class="empty">That game isn't on any schedule we follow. <a href="#/">Back to all games</a></p>`; return; }
     const d = new Date(g.start);
     const p = perspective(g);
+    const hide = isHidden(g);
     const mid = g.status === "scheduled"
       ? `${esc(timeLabel(g))}<small>${esc(dayLabel(d))}</small>`
+      : hide ? `${revealBtn(g)}<small>${g.status === "live" ? "Live" : "Final"}</small>`
       : `${g.away.score ?? 0}–${g.home.score ?? 0}<small>${g.status === "live" ? '<span class="live-tag">Live</span>' : esc(g.statusText || "Final")}</small>`;
     const links = (g.links || []).map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join(", ");
     $main.innerHTML = `<div class="gamehead" style="${teamVars(g.team)}">
@@ -391,7 +436,7 @@
           <div class="side away">${esc(g.home.name)}<small>${g.neutral ? "" : "Home"}</small></div>
         </div>
         <dl class="facts">
-          ${g.rank ? `<dt>Ranking</dt><dd>${rankTag(g)}; ${esc(teamOf(g.team).short)} is ${esc(rankName(g.rank.us, g.rank.scope))}</dd>` : ""}
+          ${g.rank && rankTag(g) ? `<dt>Ranking</dt><dd>${rankTag(g)}; ${esc(teamOf(g.team).short)} is ${esc(rankName(g.rank.us, g.rank.scope))}</dd>` : ""}
           ${isHome(g) ? `<dt>Home</dt><dd>${esc(teamOf(g.team).short)} at home</dd>` : ""}
           <dt>When</dt><dd>${g.tbd ? esc(fLong.format(d)) + ", time to be announced" : esc(fFull.format(d))}</dd>
           ${g.venue ? `<dt>Where</dt><dd>${esc(g.venue)}</dd>` : ""}
@@ -401,6 +446,7 @@
         ${g.watch?.length ? `<section class="block"><h2>Where to watch</h2>${watchHtml(g.watch)}${g.watch.some((w) => w.note) ? `<p class="note">Listings marked ? aren't confirmed for this game yet.</p>` : ""}</section>` : ""}
       </div>
       <section class="block" id="lineup"><h2>Lineups</h2><p class="empty">${g.lineup ? "Loading lineups…" : lineupEmpty(g)}</p></section>`;
+    wireSpoilers();
     if (!g.lineup) return;
     try {
       const lu = state.lineups[id] || await (await fetch(`${DATA}lineups/${encodeURIComponent(id)}.json?v=${state.loadedAt}`)).json();
@@ -418,6 +464,11 @@
   }
 
   function renderLineup(g, lu) {
+    const hide = isHidden(g);
+    if (hide) {  // same players, no goals, assists or saves
+      lu = JSON.parse(JSON.stringify(lu));
+      for (const s of ["home", "away"]) for (const gr of lu[s]?.groups || []) for (const p of gr.players) p.stat = "";
+    }
     const ourSide = g.side;
     const sides = ourSide === "home" ? ["home", "away"] : ["away", "home"];
     const col = (s) => {
@@ -426,7 +477,9 @@
       const groups = (team?.groups || []).map((gr) => `<h3 class="posgroup">${esc(gr.title)}</h3>${playerList(gr.players, key || "_", true)}`).join("");
       return `<div data-side="${s}"${s !== ourSide ? " hidden" : ""}><h3>${esc(team?.name || "")}</h3>${groups || `<p class="empty">No lineup listed.</p>`}</div>`;
     };
-    const scoring = (lu.scoring || []).length
+    const scoring = hide && (lu.scoring || []).length
+      ? `<section class="block"><h2>Scoring</h2><p class="empty">Hidden until you reveal the score.</p></section>`
+      : (lu.scoring || []).length
       ? `<section class="block"><h2>Scoring</h2><ul class="scoring">${lu.scoring.map((s) => `<li><span class="when">${esc(s.period)} ${esc(s.time)}</span><span><strong>${esc(s.team)}</strong> ${esc(s.text)}</span></li>`).join("")}</ul></section>` : "";
     document.getElementById("lineup").innerHTML = `<h2>Lineups</h2>
       <div class="switch" role="group" aria-label="Choose team">${sides.map((s) => `<button type="button" data-side="${s}" aria-pressed="${s === ourSide}">${esc(lu[s]?.name || s)}</button>`).join("")}</div>
@@ -447,9 +500,13 @@
   function renderFoot() {
     const src = Object.entries(state.meta.sources || {});
     const bad = src.filter(([, v]) => !v.ok);
-    $foot.innerHTML = `<p>All times Eastern. Scores and lineups update after each game; schedules, rosters and standings once a day.</p>
+    $foot.innerHTML = `<p>${spoilersOn()
+        ? `Scores from the last ${HIDE_DAYS} days stay hidden until you reveal them. <button type="button" id="spoil">Always show scores</button>`
+        : `Scores are always shown. <button type="button" id="spoil">Hide recent scores</button>`}</p>
+      <p>All times Eastern. Scores and lineups update after each game; schedules, rosters and standings once a day.</p>
       ${bad.map(([k, v]) => `<p class="bad">${esc(teamOf(k).short)}: couldn't reach ${esc(v.label)} on the last try. Showing what we had as of ${esc(stamp(v.updated))}.</p>`).join("")}
       <p>Sources: College Hockey News, the PWHL (HockeyTech), and Wikipedia for IIHF tournaments. Always check the broadcaster before settling in.</p>`;
+    document.getElementById("spoil").addEventListener("click", () => { store.set("rinkside.hideScores", !spoilersOn()); route(); });
   }
 
   function route() {

@@ -250,3 +250,12 @@ table.grid td.n { font-weight: 900; font-stretch: 62%; font-size: 24px; line-hei
 .foot { max-width: 720px; margin: 0 auto; padding: 18px var(--gutter) 40px; font-size: 14px; color: var(--ink-soft); }
 .foot p { margin: 4px 0; }
 .foot .bad { color: var(--loss); font-weight: 700; }
+
+/* spoiler protection */
+.reveal { position: relative; z-index: 1; font: 800 15px/1 var(--font); min-height: 44px; padding: 0 16px; border-radius: 8px; cursor: pointer;
+  background: var(--paper); color: var(--ink); border: 2px solid var(--ink); }
+.reveal:hover { background: var(--ink); color: var(--paper); }
+.board .mid .reveal { font-stretch: 100%; }
+.gate { background: var(--paper); border-radius: 6px; padding: 16px; margin-top: 18px; }
+.gate p { margin: 0 0 12px; max-width: 60ch; }
+.foot button { font: inherit; color: var(--link); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }

@@ -36,10 +36,7 @@ def _event(g, team, site_url, stamp, with_team):
     them = g["away"] if g["side"] == "home" else g["home"]
     prefix = "vs" if g.get("neutral") or g["side"] == "home" else "at"
     title = f"{team['short']} {prefix} {them['name']}"
-    if g["status"] == "final" and us.get("score") is not None and them.get("score") is not None:
-        res = "W" if us["score"] > them["score"] else "L" if us["score"] < them["score"] else "T"
-        extra = (g.get("statusText") or "").replace("Final", "").replace(res, "").strip(" ·")
-        title += f" — {res} {us['score']}–{them['score']}" + (f" {extra}" if extra else "")
+    # No scores in the calendar: it would spoil games watched later.
     if g["side"] == "home" and not g.get("neutral"):
         title = "🏠 " + title
 
