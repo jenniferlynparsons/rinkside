@@ -40,32 +40,15 @@ class Node:
                 yield c
                 yield from c.iter()
 
-    def find_all(self, tag=None, cls=None, attr=None, pred=None):
-        out = []
-        for n in self.iter():
-            if tag and n.tag != tag:
-                continue
-            if cls and cls not in n.classes:
-                continue
-            if attr and attr not in n.attrs:
-                continue
-            if pred and not pred(n):
-                continue
-            out.append(n)
-        return out
+    def _matches(self, tag=None, cls=None, pred=None):
+        return (n for n in self.iter()
+                if (not tag or n.tag == tag) and (not cls or cls in n.classes) and (not pred or pred(n)))
 
-    def find(self, tag=None, cls=None, attr=None, pred=None):
-        for n in self.iter():
-            if tag and n.tag != tag:
-                continue
-            if cls and cls not in n.classes:
-                continue
-            if attr and attr not in n.attrs:
-                continue
-            if pred and not pred(n):
-                continue
-            return n
-        return None
+    def find_all(self, tag=None, cls=None, pred=None):
+        return list(self._matches(tag, cls, pred))
+
+    def find(self, tag=None, cls=None, pred=None):
+        return next(self._matches(tag, cls, pred), None)
 
     def ancestors(self):
         p = self.parent
