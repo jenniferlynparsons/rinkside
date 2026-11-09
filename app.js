@@ -4,9 +4,7 @@
 (() => {
   "use strict";
 
-  // A preview copy of the site (in /next/) reads the live data one folder up.
-  const BASE = document.documentElement.dataset.base || "";
-  const DATA = BASE + "data/";
+  const DATA = "data/";
   const state = { meta: null, teams: {}, loadedAt: 0, lineups: {}, sorts: {}, peek: {} };
   const $main = document.getElementById("main");
   const $nav = document.getElementById("teamnav");
@@ -53,7 +51,6 @@
   const updatedOf = (key) => state.meta?.sources?.[key]?.updated;
   const started = (g) => g.status === "scheduled" && !g.tbd && new Date(g.start) <= Date.now();
   const teamOf = (key) => state.meta.teams.find((t) => t.key === key) || { key, short: key, color: "" };
-  const dot = (key) => `<span class="dot" style="--c:${esc(teamOf(key).color)}" aria-hidden="true"></span>`;
 
   function perspective(g) {
     const us = g.side === "home" ? g.home : g.away;
@@ -110,7 +107,6 @@
   }
 
   const isHome = (g) => g.side === "home" && !g.neutral;
-  const homeBadge = (g) => (isHome(g) ? `<span class="homebadge">Home</span>` : "");
   const ordinal = (n) => n + (["th", "st", "nd", "rd"][(n % 100 > 10 && n % 100 < 14) ? 0 : n % 10] || "th");
   const rankName = (n, scope) => (scope === "NPI" ? `No. ${n}` : `${ordinal(n)} in ${scope}`);
 
@@ -130,7 +126,7 @@
 
   // Calendar subscription links for calendar/<key>.ics (published next to the site).
   function calendarBlock(key, label) {
-    const https = new URL(`${BASE}calendar/${key}.ics`, location.href.split("#")[0]).href;
+    const https = new URL(`calendar/${key}.ics`, location.href.split("#")[0]).href;
     const webcal = https.replace(/^https?:/, "webcal:");
     const google = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}`;
     return `<section class="block cal"><h2>In your calendar</h2>
@@ -163,18 +159,6 @@
         : `<span class="${cls}"${title}>${label}${rg}</span>`;
     };
     return `<div class="watch"><span class="lbl">Watch</span>${list.map(pill).join("")}</div>`;
-  }
-
-  function scoreHtml(g) {
-    const p = perspective(g);
-    if (g.status === "live") {
-      return `<span class="live-tag">Live</span> <span class="score">${p.us.score ?? 0}–${p.them.score ?? 0}</span>`;
-    }
-    if (g.status === "final") {
-      const extra = (g.statusText || "").match(/\b(OT|SO|\dOT)\b/i)?.[0];
-      return `<span class="score"><span class="res ${p.result}">${p.result}</span>${p.us.score}–${p.them.score}${extra ? ` <small>${esc(extra.toUpperCase())}</small>` : ""}</span>`;
-    }
-    return "";
   }
 
   // A game as a ticket: team-color stub with the time, perforation, details.
