@@ -22,9 +22,8 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from common import iso_utc, norm_name, now_utc, parse_iso  # noqa: E402
+from common import iso_utc, norm_name, now_utc  # noqa: E402
 import college  # noqa: E402
-import iihf  # noqa: E402
 import ical  # noqa: E402
 import wiki  # noqa: E402
 from pwhl import PWHL  # noqa: E402
@@ -163,9 +162,8 @@ def main():
     ap.add_argument("--only", help="comma-separated team keys")
     ap.add_argument("--mode", choices=["auto", "full"], default="full",
                     help="auto: fetch only the teams that need it right now (used by the scheduled run)")
-    ap.add_argument("--now", help="pretend it is this UTC time (for testing the planner)")
     args = ap.parse_args()
-    now = parse_iso(args.now) if args.now else now_utc()
+    now = now_utc()
 
     with open(os.path.join(ROOT, "config.json")) as fh:
         cfg = json.load(fh)
@@ -229,9 +227,8 @@ def main():
     iihf_teams = [t for t in teams if t["source"] == "iihf"]
     if iihf_teams:
         try:
-            # iihf.com blocks cloud servers, so Wikipedia is the default source.
-            mod = iihf if cfg["iihf"].get("source") == "iihf" else wiki
-            res = mod.build_event(cfg["iihf"], iihf_teams, cache, cfg["iihf"].get("watch", []))
+            # iihf.com blocks cloud servers, so the IIHF teams read Wikipedia.
+            res = wiki.build_event(cfg["iihf"], iihf_teams, cache, cfg["iihf"].get("watch", []))
             for t in iihf_teams:
                 payload = res[t["key"]]
                 payload["games"] += extra_games(cfg, t["key"])

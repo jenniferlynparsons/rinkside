@@ -147,6 +147,34 @@ def parse_goals(raw):
     return out
 
 
+def group_table(games, group, names):
+    teams = {}
+    for g in games:
+        if g["phase"] != "PreliminaryRound" or g["group"] != group:
+            continue
+        for code in (g["home"], g["away"]):
+            teams.setdefault(code, {"team": names.get(code, code), "code": code, "gp": 0, "w": 0, "otw": 0,
+                                    "otl": 0, "l": 0, "gf": 0, "ga": 0, "pts": 0})
+        if g["status"] != "final" or g["hs"] is None or g["as"] is None:
+            continue
+        h, aw = teams[g["home"]], teams[g["away"]]
+        extra = g["ot"] or g["so"]
+        for me, them, gf, ga in ((h, aw, g["hs"], g["as"]), (aw, h, g["as"], g["hs"])):
+            me["gp"] += 1
+            me["gf"] += gf
+            me["ga"] += ga
+            if gf > ga:
+                me["otw" if extra else "w"] += 1
+                me["pts"] += 2 if extra else 3
+            else:
+                me["otl" if extra else "l"] += 1
+                me["pts"] += 1 if extra else 0
+    rows = sorted(teams.values(), key=lambda t: (-t["pts"], -(t["gf"] - t["ga"]), -t["gf"], t["team"]))
+    for i, r in enumerate(rows, 1):
+        r["rank"] = i
+    return rows
+
+
 def parse_rosters(text):
     """{'United States': [{'num','pos','name','club','flag'}], …} from the rosters article."""
     teams = {}

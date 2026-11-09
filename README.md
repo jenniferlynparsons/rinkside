@@ -49,8 +49,6 @@ spread across the day; on a quiet day, about fifteen.
 iihf.com blocks requests from cloud servers like GitHub's, so the IIHF teams
 read Wikipedia instead, which editors keep current during tournaments. It
 has no game-day lineups, so each game shows both teams' tournament rosters.
-(`fetch/iihf.py` still holds a parser for iihf.com, used if you set
-`iihf.source` to `"iihf"` in `config.json`.)
 
 ## Calendar feeds
 
@@ -153,7 +151,7 @@ bottom of the page turns it off. The calendar feeds never include scores.
 - **These are public pages, not official APIs.** If a site changes its layout,
   that team's data stops updating and the page footer says which source
   failed. The parsers live in `fetch/college.py`, `fetch/pwhl.py` and
-  `fetch/iihf.py`; `fetch/tests/run_offline.py` checks them against saved
+  `fetch/wiki.py`; `fetch/tests/run_offline.py` checks them against saved
   copies of each page.
 - **GitHub pauses scheduled workflows** in repos with no commits for 60 days.
   If the data stops refreshing over the summer, push any small change or

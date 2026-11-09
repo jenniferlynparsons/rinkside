@@ -16,7 +16,6 @@ sys.path.insert(0, os.path.dirname(HERE))
 
 import college  # noqa: E402
 import common  # noqa: E402
-import iihf  # noqa: E402
 import pwhl  # noqa: E402
 import wiki  # noqa: E402
 import fetch  # noqa: E402
@@ -141,21 +140,11 @@ def fake_get(url, *, params=None, as_json=False, **kw):
     if "wikipedia.org" in url:
         page = p.get("page", "")
         return {"parse": {"wikitext": fx("wiki_rosters.txt" if page.endswith("rosters") else "wiki_event.txt")}}
-    if "iihf.com" in url:
-        if url.endswith("/schedule"):
-            return fx("iihf_schedule.html")
-        if url.endswith("/teams"):
-            return fx("iihf_teams.html")
-        if "/teams/roster/" in url:
-            return fx("iihf_roster.html")
-        if "/gamecenter/lineup/" in url:
-            return fx("iihf_lineup.html")
-        raise AssertionError(f"unexpected IIHF call {url}")
     raise AssertionError(f"unexpected call {url}")
 
 
 def main():
-    for mod in (college, iihf, pwhl, wiki, common):
+    for mod in (college, pwhl, wiki, common):
         mod.http_get = fake_get
     # Pretend "now" is the first weekend of Worlds so the lineup logic runs.
     out = os.path.join(HERE, "sample-data")
