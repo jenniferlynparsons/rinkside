@@ -12,8 +12,7 @@ import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from common import http_get, iso_utc, to_int
-from iihf import group_table
+from common import STANDINGS_COLUMNS, http_get, iso_utc, to_int
 
 API = "https://en.wikipedia.org/w/api.php"
 MONTHS = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july",
@@ -290,10 +289,8 @@ def build_event(event_cfg, team_cfgs, cache, watch_cfg):
                        "us": next((r["rank"] for r in played if r["code"] == code), None)}
             standings.append({
                 "title": f"{event_cfg['short']} · Group {group}",
-                "columns": [{"key": "gp", "label": "GP"}, {"key": "pts", "label": "PTS"}, {"key": "w", "label": "W"},
-                            {"key": "otw", "label": "OTW"}, {"key": "otl", "label": "OTL"}, {"key": "l", "label": "L"},
-                            {"key": "gf", "label": "GF"}, {"key": "ga", "label": "GA"}],
-                "rows": [dict(r, us=r["code"] == code) for r in group_table(games_all, group, names)],
+                "columns": STANDINGS_COLUMNS,
+                "rows": [dict(r, us=r["code"] == code) for r in table],
                 "note": "Worked out from the results (3 pts regulation win, 2 OT/SO win, 1 OT/SO loss). "
                         "Tiebreakers aren't applied — check iihf.com when teams are level.",
             })

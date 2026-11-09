@@ -5,7 +5,7 @@ browser. Everything here is read-only JSON.
 """
 from datetime import timedelta
 
-from common import http_get, iso_utc, now_utc, parse_iso, to_int
+from common import SKATER_COLUMNS, STANDINGS_COLUMNS, http_get, iso_utc, now_utc, parse_iso, to_int
 
 FEED = "https://lscluster.hockeytech.com/feed/index.php"
 
@@ -255,11 +255,8 @@ class PWHL:
             })
         # The table with our team first.
         tables.sort(key=lambda t: not any(x["us"] for x in t["rows"]))
-        cols = [{"key": "gp", "label": "GP"}, {"key": "pts", "label": "PTS"}, {"key": "w", "label": "W"},
-                {"key": "otw", "label": "OTW"}, {"key": "otl", "label": "OTL"}, {"key": "l", "label": "L"},
-                {"key": "gf", "label": "GF"}, {"key": "ga", "label": "GA"}]
         for t in tables:
-            t["columns"] = cols
+            t["columns"] = STANDINGS_COLUMNS
             t["note"] = "Regulation win 3 pts · OT/shootout win 2 · OT/shootout loss 1"
         return tables
 
@@ -289,9 +286,7 @@ class PWHL:
         return {
             "title": season["season_name"],
             "skaters": {
-                "columns": [{"key": k, "label": l} for k, l in
-                            [("gp", "GP"), ("g", "G"), ("a", "A"), ("pts", "PTS"), ("pm", "+/-"),
-                             ("pim", "PIM"), ("sog", "SOG")]],
+                "columns": SKATER_COLUMNS,
                 "rows": [{"num": p.get("jersey_number", ""), "name": p.get("name", ""), "pos": p.get("position", ""),
                           "gp": to_int(p.get("games_played")), "g": to_int(p.get("goals")),
                           "a": to_int(p.get("assists")), "pts": to_int(p.get("points")),

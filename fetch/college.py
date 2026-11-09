@@ -184,9 +184,7 @@ def parse_stats(html, roster):
     skm = [("gp", "GP"), ("g", "G"), ("a", "A"), ("pts", "Pts."), ("pm", "+/-"), ("pim", "PIM"), ("sog", "Shots")]
     gkm = [("gp", "GP"), ("w", "W"), ("l", "L"), ("t", "T"), ("gaa", "GAA"), ("svp", "SV%"), ("so", "SH")]
     return {
-        "skaters": {"columns": [{"key": k, "label": l} for k, l in
-                                [("gp", "GP"), ("g", "G"), ("a", "A"), ("pts", "PTS"), ("pm", "+/-"), ("pim", "PIM"), ("sog", "SOG")]],
-                    "rows": pick(skaters, skm)},
+        "skaters": {"columns": SKATER_COLUMNS, "rows": pick(skaters, skm)},
         "goalies": {"columns": [{"key": k, "label": l} for k, l in
                                 [("gp", "GP"), ("w", "W"), ("l", "L"), ("t", "T"), ("gaa", "GAA"), ("svp", "SV%"), ("so", "SO")]],
                     "rows": pick(goalies, gkm)},

@@ -17,6 +17,10 @@ UA = "Mozilla/5.0 (compatible; Rinkside/1.0; personal hockey schedule site" + \
      (f"; +https://github.com/{_REPO})" if _REPO else ")")
 ET = ZoneInfo("America/New_York")
 
+STANDINGS_COLUMNS = [{"key": k, "label": k.upper()} for k in ("gp", "pts", "w", "otw", "otl", "l", "gf", "ga")]
+SKATER_COLUMNS = [{"key": k, "label": l} for k, l in
+                  [("gp", "GP"), ("g", "G"), ("a", "A"), ("pts", "PTS"), ("pm", "+/-"), ("pim", "PIM"), ("sog", "SOG")]]
+
 
 def http_get(url, *, params=None, tries=3, timeout=30, as_json=False):
     if params:
