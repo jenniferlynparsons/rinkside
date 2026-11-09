@@ -6,6 +6,8 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 
+from common import ET
+
 GAME_LENGTH = timedelta(hours=2, minutes=30)
 
 
@@ -31,7 +33,7 @@ def _utc(dt):
     return dt.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 
-def _event(g, team, site_url, stamp, with_team):
+def _event(g, team, site_url, stamp):
     us = g["home"] if g["side"] == "home" else g["away"]
     them = g["away"] if g["side"] == "home" else g["home"]
     prefix = "vs" if g.get("neutral") or g["side"] == "home" else "at"
@@ -57,8 +59,7 @@ def _event(g, team, site_url, stamp, with_team):
     start = datetime.fromisoformat(g["start"].replace("Z", "+00:00"))
     ev = ["BEGIN:VEVENT", f"UID:{g['id']}@rinkside", f"DTSTAMP:{stamp}"]
     if g.get("tbd"):  # time not announced yet: all-day placeholder on the right Eastern date
-        from zoneinfo import ZoneInfo
-        d = start.astimezone(ZoneInfo("America/New_York")).date()
+        d = start.astimezone(ET).date()
         ev += [f"DTSTART;VALUE=DATE:{d:%Y%m%d}", f"DTEND;VALUE=DATE:{d + timedelta(days=1):%Y%m%d}"]
         lines.insert(0, "Start time to be announced.")
     else:
@@ -105,10 +106,10 @@ def write_calendars(cfg, data_dir, cal_dir):
         except (OSError, ValueError):
             continue
         games = data.get("games", [])
-        mine = [x for g in games for x in _event(g, t, site, stamp, with_team=False)]
+        mine = [x for g in games for x in _event(g, t, site, stamp)]
         with open(os.path.join(cal_dir, f"{t['key']}.ics"), "w", newline="") as fh:
             fh.write(_calendar(f"{t['name']} — Rinkside", mine))
-        every += [x for g in games for x in _event(g, t, site, stamp, with_team=True)]
+        every += [x for g in games for x in _event(g, t, site, stamp)]
         written.append(t["key"])
     with open(os.path.join(cal_dir, "all.ics"), "w", newline="") as fh:
         fh.write(_calendar("Rinkside — all teams", every))

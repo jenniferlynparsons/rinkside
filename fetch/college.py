@@ -4,9 +4,10 @@ Schedule, results, TV, conference standings, roster, season stats and box
 scores. CHN pages are plain server-rendered HTML.
 """
 import re
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 
-from common import ET, http_get, iso_utc, last_first_to_first_last, norm_name, num, to_int
+from common import ET, SKATER_COLUMNS, http_get, iso_utc, last_first_to_first_last, norm_name, num, to_int
 import dom
 
 BASE = "https://www.collegehockeynews.com"
@@ -354,12 +355,10 @@ def build(team_cfg, cache):
                 continue
         g["_lineup"] = lu
 
-    w = sum(1 for g in games if g.get("result") == "W" and g["comp"] != "Exhibition")
-    l = sum(1 for g in games if g.get("result") == "L" and g["comp"] != "Exhibition")
-    t = sum(1 for g in games if g.get("result") == "T" and g["comp"] != "Exhibition")
+    rec = Counter(g["result"] for g in games if g["comp"] != "Exhibition")
     return {
         "games": games,
-        "record": f"{w}-{l}-{t}",
+        "record": f"{rec['W']}-{rec['L']}-{rec['T']}",
         "standings": standings,
         "roster": {"title": f"{season[:4]}-{season[6:]} roster", "players": roster},
         "stats": stats,
