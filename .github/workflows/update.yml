@@ -6,6 +6,10 @@
 # PWHL/IIHF games (for lineups), and after a game should be over.
 #
 # A push to main, or "Run workflow" on the Actions tab, does a full refresh.
+#
+# Two jobs, as GitHub recommends for Pages: "refresh" fetches the data and
+# packages the site; "deploy" publishes it. Deploying in the same job as the
+# upload can fail with "No artifacts named github-pages were found".
 name: Refresh and publish
 
 on:
@@ -17,8 +21,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -28,13 +30,12 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+    outputs:
+      changed: ${{ steps.fetch.outputs.changed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -64,12 +65,24 @@ jobs:
         if: steps.fetch.outputs.changed == 'true'
         run: cp index.html style.css app.js config.json _site/ && cp -r assets _site/
 
-      - if: steps.fetch.outputs.changed == 'true'
-        uses: actions/configure-pages@v5
-      - if: steps.fetch.outputs.changed == 'true'
-        uses: actions/upload-pages-artifact@v3
+      - name: Package site for Pages
+        if: steps.fetch.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v5
         with:
           path: _site
+
+  deploy:
+    needs: refresh
+    if: needs.refresh.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
       - id: deploy
-        if: steps.fetch.outputs.changed == 'true'
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
